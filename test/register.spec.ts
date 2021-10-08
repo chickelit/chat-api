@@ -72,7 +72,7 @@ test.group("/register", async (group) => {
     assert.deepEqual(user.email, body.email);
   });
 
-  test("should be able to complete register through the generated key", async (assert) => {
+  test("should be able to finish register", async (assert) => {
     const { key } = await beginRegister(assert);
     const { body } = await request
       .put("/register")
