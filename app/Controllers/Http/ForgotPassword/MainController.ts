@@ -19,7 +19,7 @@ export default class ForgotPasswordController {
 
       await Mail.send((message) => {
         message.to(email);
-        message.from("contato@whatsApp.com", "WhatsApp");
+        message.from("contato@ChatApp.com", "ChatApp");
         message.subject("Recuperação de senha");
         message.htmlView("emails/forgot-password.edge", { link });
       });
