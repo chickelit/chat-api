@@ -69,7 +69,12 @@ As seguintes ferramentas foram usadas na construção do projeto:
 - [Node.js](https://nodejs.org/en/)
 - [AdonisJS](https://adonisjs.com/)
 - [TypeScript](https://www.typescriptlang.org/)
-
+- [MySQL](https://www.mysql.com/)
+- [Adonis Lucid](https://www.npmjs.com/package/@adonisjs/lucid)
+- [Adonis Auth](https://www.npmjs.com/package/@adonisjs/auth)
+- [Adonis Mail](https://www.npmjs.com/package/@adonisjs/mail)
+- [API tokens](https://docs.adonisjs.com/guides/auth/api-tokens-guard)
+- [Docker](https://www.docker.com/)
 ### Autor
 
 ---
