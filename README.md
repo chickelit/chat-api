@@ -77,7 +77,7 @@ As seguintes ferramentas foram usadas na construção do projeto:
 <a href="https://github.com/jose13162">
   <img style="border-radius: 50%;" src="https://avatars.githubusercontent.com/u/77130179?s=400&u=6391f7b20bf725e259e02aa698fe6b4f5266286c&v=4" width="100px;" alt="Foto de perfil de José Anselmo"/>
   <br />
-  <sub><b>José Anselmo</b></sub>
+  <sub style="color: lightblue; text-decoration: none;"><b>José Anselmo</b></sub>
 
 [![Instagram Badge](https://img.shields.io/badge/-@tete627-FCAF45?style=flat-square&labelColor=E1306C&logo=instagram&logoColor=white&link=https://instagram.com/tete627)](https://instagram.com/tete627)
 </a>
