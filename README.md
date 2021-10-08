@@ -3,8 +3,9 @@
 <div align="center">
   <img src="https://img.shields.io/badge/npm-v7.19.1-brightgreen" />
   <img src="https://img.shields.io/badge/node-v14.16.1-brightgreen" />
-  <img src="https://img.shields.io/badge/Typescript-v4.2-blue" />
   <img src="https://img.shields.io/badge/Adonis-v5-b000ff" />
+  <img src="https://img.shields.io/badge/Typescript-v4.2-blue">
+  <img src="https://img.shields.io/badge/Japa-v3.1.1-b000ff" />
 </div>
 <h4 align="center"> 
 	🚧  Em desenvolvimento...  🚧
@@ -26,10 +27,10 @@
 ### Pré-requisitos
 
 Antes de começar, você vai precisar ter instalado em sua máquina as seguintes ferramentas:
-[Git](https://git-scm.com), [Node.js](https://nodejs.org/en/). 
+[Git](https://git-scm.com), [Node.js](https://nodejs.org/en/).
 Além disto é bom ter um editor para trabalhar com o código como [VSCode](https://code.visualstudio.com/)
 
-### 🎲 Rodando o Back End 
+### 🎲 Rodando o Back End
 
 ```bash
 # Clone este repositório
@@ -48,6 +49,7 @@ $ npm run dev
 
 # O servidor iniciará na porta:3333 - acesse http://localhost:3333
 ```
+
 ### 🎲 Rodando os testes
 
 ```bash
@@ -59,6 +61,7 @@ $ npm run japa
 # Ou, para executar os testes e observar mudanças nos arquivos
 $ npm run japa:watch
 ```
+
 ### 🛠 Tecnologias
 
 As seguintes ferramentas foram usadas na construção do projeto:
@@ -68,10 +71,10 @@ As seguintes ferramentas foram usadas na construção do projeto:
 - [TypeScript](https://www.typescriptlang.org/)
 
 ### Autor
+
 ---
 
  <img style="border-radius: 50%;" src="https://avatars.githubusercontent.com/u/77130179?s=400&u=6391f7b20bf725e259e02aa698fe6b4f5266286c&v=4" width="100px;" alt=""/>
  <sub><b>José Anselmo</b></sub>
 
 [![Instagram Badge](https://img.shields.io/badge/-@tete627-FCAF45?style=flat-square&labelColor=E1306C&logo=instagram&logoColor=white&link=https://instagram.com/tete627)](https://instagram.com/tete627)
-
