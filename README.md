@@ -46,7 +46,18 @@ $ npm install
 # Execute a aplicação em modo de desenvolvimento
 $ npm run dev
 
-# O servidor inciará na porta:3333 - acesse http://localhost:3333
+# O servidor iniciará na porta:3333 - acesse http://localhost:3333
+```
+### 🎲 Rodando os testes
+
+```bash
+# Crie um banco de dados chamado "testing" em sua conexão com o MySQL
+
+# Execute o script de testes
+$ npm run japa
+
+# Ou, para executar os testes e observar mudanças nos arquivos
+$ npm run japa:watch
 ```
 ### 🛠 Tecnologias
 
