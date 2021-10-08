@@ -21,9 +21,9 @@ export default class RegisterController {
 
       await Mail.send((message) => {
         message.to(email);
-        message.from("contato@whatsapp.com", "WhatsApp");
-        message.subject("Confirmação do registro");
-        message.htmlView("emails/verify-register.edge", { link });
+        message.from("contato@ChatApp.com", "ChatApp");
+        message.subject("Registro");
+        message.htmlView("emails/register.edge", { link });
       });
     });
   }
