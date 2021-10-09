@@ -13,7 +13,7 @@ test.group("/users/blocks", async (group) => {
     await Database.rollbackGlobalTransaction();
   });
 
-  test("should be able to block a user", async (assert) => {
+  test("[store] - should be able to block a user", async (assert) => {
     const blockedUser = await UserFactory.create();
     const { user, token } = await generateToken();
 
@@ -31,7 +31,7 @@ test.group("/users/blocks", async (group) => {
     assert.exists(block);
   });
 
-  test("should fail when trying to block authenticated user", async (assert) => {
+  test("[store] - should fail when trying to block authenticated user", async (assert) => {
     const { user, token } = await generateToken();
 
     await request
@@ -48,7 +48,7 @@ test.group("/users/blocks", async (group) => {
     assert.isNull(block);
   });
 
-  test("should fail when trying to block a blocked user", async (assert) => {
+  test("[store] - should fail when trying to block a blocked user", async (assert) => {
     const blockedUser = await UserFactory.create();
     const { user, token } = await generateToken();
 
@@ -72,7 +72,7 @@ test.group("/users/blocks", async (group) => {
     assert.exists(block);
   });
 
-  test("should fail when authenticated user is blocked", async (assert) => {
+  test("[store] - should fail when authenticated user is blocked", async (assert) => {
     const { user, token } = await generateToken();
     const { user: blockedUser, token: blockedUserToken } =
       await generateToken();
@@ -97,7 +97,7 @@ test.group("/users/blocks", async (group) => {
     assert.isNull(block);
   });
 
-  test("should fail when trying to block a user who does not exist", async (assert) => {
+  test("[store] - should fail when trying to block a user who does not exist", async (assert) => {
     const { user, token } = await generateToken();
 
     await request
@@ -114,7 +114,7 @@ test.group("/users/blocks", async (group) => {
     assert.isNull(block);
   });
 
-  test("should be able to list authenticated user's blocked user list", async (assert) => {
+  test("[index] - should be able to list authenticated user's blocked user list", async (assert) => {
     const { token } = await generateToken();
     const users = await UserFactory.createMany(10);
 
@@ -146,7 +146,7 @@ test.group("/users/blocks", async (group) => {
     });
   });
 
-  test("should be able to unblock a user", async (assert) => {
+  test("[destroy] - should be able to unblock a user", async (assert) => {
     const { user, token } = await generateToken();
     const blockedUser = await UserFactory.create();
 
@@ -176,7 +176,7 @@ test.group("/users/blocks", async (group) => {
     assert.isNull(block);
   });
 
-  test("should fail when trying to unblock an unblocked user", async () => {
+  test("[destroy] - should fail when trying to unblock an unblocked user", async () => {
     const { token } = await generateToken();
     const blockedUser = await UserFactory.create();
 
@@ -186,7 +186,7 @@ test.group("/users/blocks", async (group) => {
       .expect(400);
   });
 
-  test("should fail when trying to unblock authenticated user", async () => {
+  test("[destroy] - should fail when trying to unblock authenticated user", async () => {
     const { token, user } = await generateToken();
 
     await request
