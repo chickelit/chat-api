@@ -2,7 +2,7 @@ import Database from "@ioc:Adonis/Lucid/Database";
 import { User } from "App/Models";
 import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
-import { generateToken, request } from "Test/utils";
+import { blockUsers, generateToken, request } from "Test/utils";
 
 test.group("/users/blocks", async (group) => {
   group.beforeEach(async () => {
@@ -118,17 +118,7 @@ test.group("/users/blocks", async (group) => {
     const { token } = await generateToken();
     const users = await UserFactory.createMany(10);
 
-    const queries = users.map(async (blockedUser) => {
-      await request
-        .post(`/users/blocks`)
-        .send({ userId: blockedUser.id })
-        .set("authorization", `bearer ${token}`)
-        .expect(200);
-
-      return blockedUser;
-    });
-
-    const blockedUsers = await Promise.all(queries);
+    const blockedUsers = await blockUsers(token, users);
 
     const { body } = await request
       .get("/users/blocks")
@@ -150,11 +140,7 @@ test.group("/users/blocks", async (group) => {
     const { user, token } = await generateToken();
     const blockedUser = await UserFactory.create();
 
-    await request
-      .post(`/users/blocks`)
-      .send({ userId: blockedUser.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    await blockUsers(token, [blockedUser]);
 
     let block = await Database.query()
       .from("user_blocks")
