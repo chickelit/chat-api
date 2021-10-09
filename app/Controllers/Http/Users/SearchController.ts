@@ -28,8 +28,17 @@ export default class MainController {
       })
       .first();
 
+    const friendship = await Database.query()
+      .from("friendships")
+      .where({
+        user_id: auth.user!.id,
+        friend_id: user.id
+      })
+      .first();
+
     user.$extras.blocked = !!blocked;
     user.$extras.isBlocked = !!isBlocked;
+    user.$extras.friendship = !!friendship;
 
     await user.load("avatar");
 
