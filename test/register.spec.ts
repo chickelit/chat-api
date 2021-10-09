@@ -14,7 +14,7 @@ test.group("/register", async (group) => {
     await Database.rollbackGlobalTransaction();
   });
 
-  test("should be able to send an email when email is unique", async (assert) => {
+  test("[store] - should be able to send an email when email is not in use", async (assert) => {
     const email = faker.internet.email();
     Mail.trap((message) => {
       assert.deepEqual(message.to, [{ address: email }]);
@@ -44,7 +44,7 @@ test.group("/register", async (group) => {
     assert.exists(key);
   });
 
-  test("should fail when email is already in use", async (assert) => {
+  test("[store] - should fail when email is already in use", async (assert) => {
     const { user } = await generateToken();
 
     await request
@@ -63,7 +63,7 @@ test.group("/register", async (group) => {
     assert.notExists(key);
   });
 
-  test("should be able to show user data through the generated key", async (assert) => {
+  test("[show] - should be able to show user data through the generated key", async (assert) => {
     const { user, key } = await beginRegister(assert);
 
     const { body } = await request.get(`/register/${key}`).expect(200);
@@ -72,7 +72,7 @@ test.group("/register", async (group) => {
     assert.deepEqual(user.email, body.email);
   });
 
-  test("should be able to finish register", async (assert) => {
+  test("[update] - should be able to finish register", async (assert) => {
     const { key } = await beginRegister(assert);
     const { body } = await request
       .put("/register")
