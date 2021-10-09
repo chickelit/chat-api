@@ -54,6 +54,16 @@ export default class MainsController {
       return response.badRequest();
     }
 
+    const block = await user
+      .related("blockedUsers")
+      .query()
+      .where({ blocked_user_id: params.id })
+      .first();
+
+    if (!block) {
+      return response.badRequest();
+    }
+
     await user.related("blockedUsers").detach([params.id]);
   }
 }
