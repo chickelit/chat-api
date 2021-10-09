@@ -13,7 +13,7 @@ test.group("/auth", async (group) => {
     await Database.rollbackGlobalTransaction();
   });
 
-  test("should be able to authenticate with valid credentials", async (assert) => {
+  test("[store] - should be able to authenticate with valid credentials", async (assert) => {
     const user = await UserFactory.merge({ password: "secret" }).create();
 
     const { body } = await request
@@ -24,11 +24,11 @@ test.group("/auth", async (group) => {
     assert.exists(body.token);
   });
 
-  test("should fail when email does not exist", async () => {
+  test("[store] - should fail when email does not exist", async () => {
     await request.post("/auth").expect(422);
   });
 
-  test("should be able to logout when authenticated", async (assert) => {
+  test("[destroy] - should be able to logout when authenticated", async (assert) => {
     const { token } = await generateToken();
 
     await request
