@@ -15,7 +15,7 @@ test.group("/forgot-password", async (group) => {
     await Database.rollbackGlobalTransaction();
   });
 
-  test("should be able to send an email when email is in use", async (assert) => {
+  test("[store] - should be able to send an email when email is in use", async (assert) => {
     const user = await UserFactory.create();
 
     Mail.trap((message) => {
@@ -45,7 +45,7 @@ test.group("/forgot-password", async (group) => {
     assert.exists(key);
   });
 
-  test("should fail when email is not in use", async () => {
+  test("[store] - should fail when email is not in use", async () => {
     await request
       .post("/forgot-password")
       .send({
@@ -55,7 +55,7 @@ test.group("/forgot-password", async (group) => {
       .expect(422);
   });
 
-  test("should be able to show user data through the generated key", async (assert) => {
+  test("[show] - should be able to show user data through the generated key", async (assert) => {
     const { user, key } = await beginPasswordRecovery(assert);
 
     const { body } = await request.get(`/forgot-password/${key}`).expect(200);
@@ -70,7 +70,7 @@ test.group("/forgot-password", async (group) => {
     assert.deepEqual(user.username, body.username);
   });
 
-  test("should be able to finish password recovery", async (assert) => {
+  test("[update] - should be able to finish password recovery", async (assert) => {
     const { user, key } = await beginPasswordRecovery(assert);
     const newPassword = "newSecret";
 
@@ -94,7 +94,7 @@ test.group("/forgot-password", async (group) => {
     assert.isNull(findKey);
   });
 
-  test("should fail when passwordConfirmation is left", async (assert) => {
+  test("[update] - should fail when passwordConfirmation is left", async (assert) => {
     const { key } = await beginPasswordRecovery(assert);
     const newPassword = "newSecret";
 
@@ -104,7 +104,7 @@ test.group("/forgot-password", async (group) => {
       .expect(422);
   });
 
-  test("should fail when passwordConfirmation is invalid", async (assert) => {
+  test("[update] - should fail when passwordConfirmation is invalid", async (assert) => {
     const { key } = await beginPasswordRecovery(assert);
     const newPassword = "newSecret";
 
