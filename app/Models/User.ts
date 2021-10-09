@@ -99,4 +99,9 @@ export default class User extends BaseModel {
   public get isBlocked() {
     return this.$extras.isBlocked;
   }
+
+  @computed()
+  public get friendship() {
+    return this.$extras.friendship;
+  }
 }
