@@ -12,7 +12,7 @@ test.group("/users/search", async (group) => {
     await Database.rollbackGlobalTransaction();
   });
 
-  test("should be able to show a user through his username", async (assert) => {
+  test("[show] - should be able to show a user through his username", async (assert) => {
     const user = await UserFactory.merge({ password: "secret" }).create();
     const { token } = await generateToken();
 
@@ -31,7 +31,7 @@ test.group("/users/search", async (group) => {
     assert.deepEqual(body.username, user.username);
   });
 
-  test("should show extra data correctly", async (assert) => {
+  test("[show] - should show extra data correctly", async (assert) => {
     const user = await UserFactory.merge({ password: "secret" }).create();
     const { token } = await generateToken();
 
