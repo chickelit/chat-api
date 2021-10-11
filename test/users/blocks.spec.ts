@@ -2,7 +2,7 @@ import Database from "@ioc:Adonis/Lucid/Database";
 import { User } from "App/Models";
 import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
-import { blockUsers, generateToken, request } from "Test/utils";
+import { addFriends, blockUsers, generateToken, request } from "Test/utils";
 
 test.group("/users/blocks", async (group) => {
   group.beforeEach(async () => {
@@ -29,6 +29,61 @@ test.group("/users/blocks", async (group) => {
       .first();
 
     assert.exists(block);
+  });
+
+  test("[store] - should delete friendship when a user is blocked", async (assert) => {
+    const blockedUserWithToken = await generateToken();
+    const { user, token } = await generateToken();
+
+    await addFriends({ user, token }, [blockedUserWithToken]);
+
+    const friendship = [
+      await Database.query()
+        .from("friendships")
+        .where({
+          user_id: user.id,
+          friend_id: blockedUserWithToken.user.id
+        })
+        .first(),
+      await Database.query()
+        .from("friendships")
+        .where({ user_id: blockedUserWithToken.user.id, friend_id: user.id })
+        .first()
+    ].every((condition: any) => !!condition);
+
+    assert.isTrue(friendship);
+
+    await request
+      .post(`/users/blocks`)
+      .send({ userId: blockedUserWithToken.user.id })
+      .set("authorization", `bearer ${token}`)
+      .expect(200);
+
+    const block = await Database.query()
+      .from("user_blocks")
+      .where({
+        user_id: user.id,
+        blocked_user_id: blockedUserWithToken.user.id
+      })
+      .first();
+
+    assert.exists(block);
+
+    const findFriendship = [
+      await Database.query()
+        .from("friendships")
+        .where({
+          user_id: user.id,
+          friend_id: blockedUserWithToken.user.id
+        })
+        .first(),
+      await Database.query()
+        .from("friendships")
+        .where({ user_id: blockedUserWithToken.user.id, friend_id: user.id })
+        .first()
+    ].every((condition: any) => !!condition);
+
+    assert.isFalse(findFriendship);
   });
 
   test("[store] - should fail when trying to block authenticated user", async (assert) => {
