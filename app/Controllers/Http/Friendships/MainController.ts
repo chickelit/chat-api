@@ -35,6 +35,10 @@ export default class MainController {
     const { userId } = await request.validate(StoreValidator);
     const user = auth.user!;
 
+    if (userId === user.id) {
+      return response.badRequest();
+    }
+
     const condition = [
       await Database.query()
         .from("user_blocks")
@@ -51,7 +55,7 @@ export default class MainController {
         .first())
     ].some((condition) => condition);
 
-    if (condition || userId === user.id) {
+    if (condition) {
       return response.badRequest();
     }
 
@@ -70,14 +74,22 @@ export default class MainController {
   public async destroy({ response, params, auth }: HttpContextContract) {
     const user = auth.user!;
 
+    if (user.id === +params.id) {
+      return response.badRequest();
+    }
+
     const condition = [
-      !(await Database.query()
+      await Database.query()
         .from("friendships")
         .where({ user_id: user.id, friend_id: +params.id })
-        .first())
-    ].some((condition) => condition);
+        .first(),
+      await Database.query()
+        .from("friendships")
+        .where({ user_id: +params.id, friend_id: user.id })
+        .first()
+    ].every((condition) => condition);
 
-    if (condition || user.id === +params.id) {
+    if (!condition) {
       return response.badRequest();
     }
 
