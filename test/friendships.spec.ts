@@ -10,7 +10,7 @@ import {
 } from "Test/utils";
 import { generateToken } from "./utils";
 
-test.group("/auth", async (group) => {
+test.group("/friendships", async (group) => {
   group.beforeEach(async () => {
     await Database.beginGlobalTransaction();
   });
@@ -196,6 +196,48 @@ test.group("/auth", async (group) => {
       const isValid = body.data.some((friend: User) => {
         return user.id === friend.id;
       });
+
+      assert.isTrue(isValid);
+    });
+  });
+
+  test("[index] - should show extra data correctly", async (assert) => {
+    const { user, token } = await generateToken();
+    const array = Array(10).fill(false);
+    const queries = array.map(async () => {
+      return await generateToken();
+    });
+    const friends = await Promise.all(queries);
+    const blockedFriends = friends
+      .slice(1, 5)
+      .map((userWithToken) => userWithToken.user);
+
+    await addFriends({ user, token }, friends);
+    await blockUsers(token, blockedFriends);
+
+    const { body } = await request
+      .get("/friendships?page=1&perPage=20")
+      .set("authorization", `bearer ${token}`)
+      .expect(200);
+
+    assert.exists(body.meta);
+    assert.exists(body.data);
+    assert.equal(body.meta.total, friends.length);
+
+    friends.forEach(({ user }) => {
+      const isValid = body.data.some((friend: User) => {
+        return user.id === friend.id;
+      });
+
+      assert.isTrue(isValid);
+    });
+
+    const findBlockedUsers = body.data.filter((user) => user.isBlocked);
+
+    assert.equal(findBlockedUsers.length, blockedFriends.length);
+
+    findBlockedUsers.forEach((blockedUser) => {
+      const isValid = blockedFriends.some((user) => user.id === blockedUser.id);
 
       assert.isTrue(isValid);
     });

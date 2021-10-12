@@ -174,6 +174,55 @@ test.group("/friendships/requests", async (group) => {
     });
   });
 
+  test("[index] - should show extra data correctly", async (assert) => {
+    const { user, token } = await generateToken();
+    const array = Array(10).fill(false);
+    const queries = array.map(async () => {
+      return await generateToken();
+    });
+    const users = await Promise.all(queries);
+
+    const blockedUsers = users
+      .slice(1, 5)
+      .map((userWithToken) => userWithToken.user);
+
+    await sendFriendshipRequests(
+      user.id,
+      users.map((user) => user.token)
+    );
+
+    await blockUsers(token, blockedUsers);
+
+    const { body } = await request
+      .get("/friendships/requests?page=1&perPage=20")
+      .set("authorization", `bearer ${token}`)
+      .expect(200);
+
+    assert.exists(body.meta);
+    assert.exists(body.data);
+    assert.equal(body.meta.total, users.length);
+
+    users.forEach(({ user }) => {
+      const isValid = body.data.some((friendshipRequestUser: User) => {
+        return user.id === friendshipRequestUser.id;
+      });
+
+      assert.isTrue(isValid);
+    });
+
+    const findBlockedFriends = users.filter(
+      ({ user: friend }) => friend.isBlocked
+    );
+
+    findBlockedFriends.forEach(({ user }) => {
+      const isValid = body.data.some((friend: User) => {
+        return user.isBlocked === friend.isBlocked;
+      });
+
+      assert.isTrue(isValid);
+    });
+  });
+
   test("[destroy] - should be able to refuse a friendship request", async (assert) => {
     const { user, token } = await generateToken();
     const userWithToken = await generateToken();
