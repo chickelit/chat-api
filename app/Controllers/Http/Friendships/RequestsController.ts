@@ -20,6 +20,29 @@ export default class RequestsController {
       .preload("avatar")
       .paginate(page, perPage);
 
+    const queries = pendingFriendshipRequests
+      .toJSON()
+      .data.map(async (friendshipRequest) => {
+        const blocked = await friendshipRequest
+          .related("blockedUsers")
+          .query()
+          .where({ blocked_user_id: user.id })
+          .first();
+
+        const isBlocked = await user
+          .related("blockedUsers")
+          .query()
+          .where({ blocked_user_id: friendshipRequest.id })
+          .first();
+
+        friendshipRequest.$extras.blocked = blocked;
+        friendshipRequest.$extras.isBlocked = isBlocked;
+
+        return friendshipRequest;
+      });
+
+    pendingFriendshipRequests.toJSON().data = await Promise.all(queries);
+
     return pendingFriendshipRequests;
   }
 

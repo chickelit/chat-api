@@ -23,6 +23,21 @@ export default class MainController {
     const queries = friends.map(async (friend) => {
       await friend.load("avatar");
 
+      const blocked = await friend
+        .related("blockedUsers")
+        .query()
+        .where({ blocked_user_id: user.id })
+        .first();
+
+      const isBlocked = await user
+        .related("blockedUsers")
+        .query()
+        .where({ blocked_user_id: friend.id })
+        .first();
+
+      friend.$extras.blocked = blocked;
+      friend.$extras.isBlocked = isBlocked;
+
       return friend;
     });
 
