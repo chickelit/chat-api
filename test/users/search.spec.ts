@@ -1,7 +1,7 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
-import { generateToken, request } from "Test/utils";
+import { addFriends, blockUsers, generateToken, request } from "Test/utils";
 
 test.group("/users/search", async (group) => {
   group.beforeEach(async () => {
@@ -32,17 +32,14 @@ test.group("/users/search", async (group) => {
   });
 
   test("[show] - should show extra data correctly", async (assert) => {
-    const user = await UserFactory.merge({ password: "secret" }).create();
-    const { token } = await generateToken();
+    const queryUserWithToken = await generateToken();
+    const { user, token } = await generateToken();
 
-    await request
-      .post(`/users/blocks`)
-      .send({ userId: user.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    await addFriends(queryUserWithToken, [{ user, token }]);
+    await blockUsers(token, [queryUserWithToken.user]);
 
     const { body } = await request
-      .get(`/users/search?username=${user.username}`)
+      .get(`/users/search?username=${queryUserWithToken.user.username}`)
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
@@ -50,15 +47,17 @@ test.group("/users/search", async (group) => {
     assert.exists(body.email);
     assert.exists(body.name);
     assert.exists(body.username);
-    assert.deepEqual(body.id, user.id);
-    assert.deepEqual(body.email, user.email);
-    assert.deepEqual(body.name, user.name);
-    assert.deepEqual(body.username, user.username);
+    assert.deepEqual(body.id, queryUserWithToken.user.id);
+    assert.deepEqual(body.email, queryUserWithToken.user.email);
+    assert.deepEqual(body.name, queryUserWithToken.user.name);
+    assert.deepEqual(body.username, queryUserWithToken.user.username);
     assert.exists(body.blocked);
     assert.exists(body.isBlocked);
     assert.exists(body.friendship);
     assert.isFalse(body.blocked);
+
+    /* --- */
     assert.isTrue(body.isBlocked);
-    assert.isFalse(body.friendship);
+    assert.isTrue(body.friendship);
   });
 });
