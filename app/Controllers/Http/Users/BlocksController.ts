@@ -1,6 +1,5 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
-import { User } from "App/Models";
 import { StoreValidator } from "App/Validators/Users/Blocks";
 
 export default class MainsController {
@@ -40,11 +39,6 @@ export default class MainsController {
     }
 
     await user.related("blockedUsers").attach([userId]);
-
-    const blockedUser = await User.findOrFail(userId);
-
-    await user.related("friends").detach([userId]);
-    await blockedUser.related("friends").detach([user.id]);
   }
 
   public async destroy({ response, params, auth }: HttpContextContract) {
