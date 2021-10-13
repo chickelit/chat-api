@@ -1,8 +1,8 @@
 import { User } from "App/Models";
 import { request } from ".";
 
-export default async (token: string, users: User[]) => {
-  const queries = users.map(async (blockedUser) => {
+export default async (token: string, blockedUsers: User[]) => {
+  const queries = blockedUsers.map(async (blockedUser) => {
     await request
       .post("/users/blocks")
       .send({ userId: blockedUser.id })
@@ -12,7 +12,7 @@ export default async (token: string, users: User[]) => {
     return blockedUser;
   });
 
-  const blockedUsers = await Promise.all(queries);
+  const users = await Promise.all(queries);
 
-  return blockedUsers;
+  return users;
 };
