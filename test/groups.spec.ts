@@ -43,7 +43,7 @@ test.group("/groups", async (group) => {
 
   test("[update] - should be able to update a group", async (assert) => {
     const { user, token } = await generateToken();
-    const newTitle = faker.lorem.words(3);
+    const newTitle = faker.lorem.words(2);
 
     const group = await GroupFactory.merge({ userId: user.id }).create();
 
