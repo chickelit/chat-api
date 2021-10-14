@@ -6,7 +6,7 @@ import {
   generateToken,
   request,
   sendFriendshipRequests
-} from "./utils";
+} from "../utils";
 
 test.group("/friendships/requests", async (group) => {
   group.beforeEach(async () => {

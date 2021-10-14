@@ -6,9 +6,9 @@ import {
   addFriends,
   blockUsers,
   request,
-  sendFriendshipRequests
+  sendFriendshipRequests,
+  generateToken
 } from "Test/utils";
-import { generateToken } from "./utils";
 
 test.group("/friendships", async (group) => {
   group.beforeEach(async () => {
