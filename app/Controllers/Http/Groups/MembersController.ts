@@ -8,6 +8,10 @@ export default class MembersController {
     const { groupId, userId } = await request.validate(StoreValidator);
     const group = await Group.findOrFail(groupId);
 
+    if (userId === auth.user!.id) {
+      return response.badRequest();
+    }
+
     if (group.userId !== auth.user!.id) {
       return response.badRequest();
     }
@@ -18,11 +22,12 @@ export default class MembersController {
       .orWhere({ user_id: auth.user!.id, blocked_user_id: userId })
       .first();
 
-    if (isBlocked) {
-      return response.badRequest();
-    }
+    const isFriend = await Database.query()
+      .from("friendships")
+      .where({ user_id: userId, friend_id: auth.user!.id })
+      .first();
 
-    if (userId === auth.user!.id) {
+    if (isBlocked || !isFriend) {
       return response.badRequest();
     }
 
@@ -104,30 +109,23 @@ export default class MembersController {
     }
 
     const group = await Group.findOrFail(groupId);
-    await group.load("members");
 
-    if (!group.members.some((member) => member.id === auth.user!.id)) {
-      return response.badRequest();
-    }
+    await group.load("members");
 
     if (!group.members.some((member) => member.id === +userId)) {
       return response.badRequest();
     }
 
     if (group.userId === auth.user!.id) {
-      if (userId === auth.user!.id) {
+      if (auth.user!.id === +userId) {
         return response.badRequest();
       }
 
-      await group.related("members").detach([userId]);
-
-      return response.ok("No body returned for response");
+      await group.related("members").detach([+userId]);
     }
 
     if (+userId === auth.user!.id) {
-      await group.related("members").detach([userId]);
-
-      return response.ok("No body returned for response");
+      await group.related("members").detach([+userId]);
     }
   }
 }
