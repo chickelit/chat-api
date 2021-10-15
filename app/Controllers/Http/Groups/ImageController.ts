@@ -6,10 +6,21 @@ import { FileCategory } from "App/utils";
 import Database from "@ioc:Adonis/Lucid/Database";
 
 export default class ImagesController {
-  public async update({ request, params, auth }: HttpContextContract) {
+  public async update({
+    request,
+    response,
+    params,
+    auth
+  }: HttpContextContract) {
     const cover = await Database.transaction(async (trx) => {
       const { file } = await request.validate(UpdateValidator);
       const user = auth.user!;
+
+      const group = await Group.findOrFail(+params.id);
+
+      if (group.userId !== auth.user!.id) {
+        return response.badRequest();
+      }
 
       user.useTransaction(trx);
 
@@ -18,13 +29,6 @@ export default class ImagesController {
         fileCategory: "groupCover" as FileCategory,
         fileName: `${new Date().getTime()}.${file.extname}`
       };
-
-      const group = await Group.query()
-        .where({
-          id: +params.id,
-          user_id: user.id
-        })
-        .firstOrFail();
 
       const cover = await group
         .related("groupCover")
