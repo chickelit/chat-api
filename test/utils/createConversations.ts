@@ -3,12 +3,14 @@ import { request } from ".";
 
 export default async (token: string, users: User[]) => {
   const queries = users.map(async (user) => {
-    await request
+    const { body } = await request
       .post("/conversations")
       .send({ userId: user.id })
       .set("authorization", `bearer ${token}`)
       .expect(200);
+
+    return body;
   });
 
-  await Promise.all(queries);
+  return await Promise.all(queries);
 };
