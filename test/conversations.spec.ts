@@ -197,6 +197,8 @@ test.group("/conversations", async (group) => {
 
       assert.isTrue(isValid);
     });
+
+    body.data.forEach((conversation) => assert.isTrue(conversation.friendship));
   });
 
   test("[show] - should be able to show a conversation", async (assert) => {
