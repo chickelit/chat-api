@@ -7,3 +7,4 @@ export { default as sendFriendshipRequests } from "./sendFriendshipRequests";
 export { default as addFriends } from "./addFriends";
 export { default as createConversations } from "./createConversations";
 export { default as addMembers } from "./addMembers";
+export { default as sendMessages } from "./sendMessages";
