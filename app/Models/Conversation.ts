@@ -63,4 +63,9 @@ export default class Conversation extends BaseModel {
   public get latestMessage() {
     return this.$extras.latestMessage;
   }
+
+  @computed()
+  public get friendship() {
+    return this.$extras.friendship;
+  }
 }

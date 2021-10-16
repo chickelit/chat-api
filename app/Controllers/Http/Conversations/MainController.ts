@@ -67,6 +67,23 @@ export default class MainController {
         .orderBy("created_at", "desc")
         .first();
 
+      const friendship = [
+        await Database.query()
+          .from("friendships")
+          .where({
+            user_id: conversation.userIdOne,
+            friend_id: conversation.userIdTwo
+          })
+          .first(),
+        await Database.query()
+          .from("friendships")
+          .where({
+            user_id: conversation.userIdTwo,
+            friend_id: conversation.userIdOne
+          })
+          .first()
+      ].every((condition) => condition);
+
       if (latestMessage) {
         await latestMessage.load("owner");
       }
@@ -77,6 +94,7 @@ export default class MainController {
 
       conversation.$extras.blocked = !!blocked;
       conversation.$extras.isBlocked = !!isBlocked;
+      conversation.$extras.friendship = !!friendship;
       conversation.$extras.latestMessage = latestMessage;
 
       const conversationInJSON = conversation.toJSON();
