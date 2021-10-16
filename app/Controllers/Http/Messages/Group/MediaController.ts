@@ -12,7 +12,7 @@ export default class MediaController {
     await group.load("members");
 
     if (!group.members.some((member) => member.id === user.id)) {
-      return response.unauthorized();
+      return response.badRequest();
     }
 
     const message = await group.related("messages").create({
@@ -22,11 +22,11 @@ export default class MediaController {
 
     const mediaFile = await message.related("media").create({
       fileCategory: "media",
-      filename: `${new Date().getTime()}.${file.extname}`
+      fileName: `${new Date().getTime()}.${file.extname}`
     });
 
     await file.move(Application.tmpPath("uploads"), {
-      name: mediaFile.filename,
+      name: mediaFile.fileName,
       overwrite: true
     });
 
