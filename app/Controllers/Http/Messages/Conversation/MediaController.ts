@@ -9,17 +9,23 @@ export default class MediaController {
     const { file } = await request.validate(StoreValidator);
     const user = auth.user!;
 
+    const conversation = await Conversation.findOrFail(params.id);
+
     const isBlocked = await Database.query()
       .from("user_blocks")
-      .where({ user_id: params.id, blocked_user_id: user.id })
-      .orWhere({ user_id: user.id, blocked_user_id: params.id })
+      .where({
+        user_id: conversation.userIdOne,
+        blocked_user_id: conversation.userIdTwo
+      })
+      .orWhere({
+        user_id: conversation.userIdTwo,
+        blocked_user_id: conversation.userIdOne
+      })
       .first();
 
     if (isBlocked) {
       return response.badRequest();
     }
-
-    const conversation = await Conversation.findOrFail(params.id);
 
     if (![conversation.userIdOne, conversation.userIdTwo].includes(user.id)) {
       return response.badRequest();
