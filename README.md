@@ -1,4 +1,4 @@
-<h1 align="center">chatApp</h1>
+<h1 align="center">chatAPI</h1>
 <p align="center">API de conversas em tempo real</p>
 <div align="center">
   <img src="https://img.shields.io/badge/npm-v7.19.1-brightgreen" />
