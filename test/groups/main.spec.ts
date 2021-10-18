@@ -1,6 +1,6 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import test from "japa";
-import { generateToken, request } from "../utils";
+import { generateToken, request, sendMessages } from "../utils";
 import faker from "faker";
 import { GroupFactory } from "Database/factories/GroupFactory";
 import { UserFactory } from "Database/factories/UserFactory";
@@ -138,6 +138,12 @@ test.group("/groups", async (group) => {
         })
     );
 
+    await Promise.all(
+      groups.map(async (group) => {
+        await sendMessages(token, 10, undefined, group.id);
+      })
+    );
+
     const { body } = await request
       .get("/groups?page=1&perPage=20")
       .set("authorization", `bearer ${token}`)
@@ -146,6 +152,21 @@ test.group("/groups", async (group) => {
     assert.exists(body.meta);
     assert.exists(body.data);
     assert.equal(body.meta.total, groups.length);
+
+    await Promise.all(
+      body.data.map(async (group) => {
+        const latestMessage = await Database.query()
+          .from("messages")
+          .where({ group_id: group.id })
+          .orderBy("created_at", "desc")
+          .first();
+
+        assert.equal(group.latestMessage.id, latestMessage.id);
+        assert.equal(group.latestMessage.userId, latestMessage.user_id);
+        assert.equal(group.latestMessage.groupId, latestMessage.group_id);
+        assert.equal(group.latestMessage.content, latestMessage.content);
+      })
+    );
 
     groups.forEach(async (group) => {
       const memberships = await Database.query()

@@ -4,7 +4,8 @@ import {
   addFriends,
   blockUsers,
   createConversations,
-  request
+  request,
+  sendMessages
 } from "Test/utils";
 import { UserFactory } from "Database/factories/UserFactory";
 import { generateToken } from "./utils";
@@ -166,9 +167,14 @@ test.group("/conversations", async (group) => {
       .map((userWithToken) => userWithToken.user);
 
     await addFriends({ user, token }, friends);
-    await createConversations(
+    const conversations = await createConversations(
       token,
       friends.map((friendWithToken) => friendWithToken.user)
+    );
+    await Promise.all(
+      conversations.map(async (conversation) => {
+        await sendMessages(token, 10, conversation.id);
+      })
     );
     await blockUsers(token, blockedFriends);
 
@@ -181,6 +187,24 @@ test.group("/conversations", async (group) => {
     assert.exists(body.data);
     assert.equal(body.meta.total, friends.length);
     assert.equal(body.data.length, friends.length);
+
+    await Promise.all(
+      body.data.map(async (conversation) => {
+        const latestMessage = await Database.query()
+          .from("messages")
+          .where({ conversation_id: conversation.id })
+          .orderBy("created_at", "desc")
+          .first();
+
+        assert.equal(conversation.latestMessage.id, latestMessage.id);
+        assert.equal(conversation.latestMessage.userId, latestMessage.user_id);
+        assert.equal(
+          conversation.latestMessage.conversationId,
+          latestMessage.conversation_id
+        );
+        assert.equal(conversation.latestMessage.content, latestMessage.content);
+      })
+    );
 
     const findBlockedConversations = body.data.filter(
       (conversation) => conversation.isBlocked
