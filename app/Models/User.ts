@@ -83,23 +83,6 @@ export default class User extends BaseModel {
   @hasMany(() => FriendshipRequest)
   public friendshipRequests: HasMany<typeof FriendshipRequest>;
 
-  @manyToMany(() => User, {
-    pivotTable: "user_blocks",
-    pivotForeignKey: "user_id",
-    pivotRelatedForeignKey: "blocked_user_id"
-  })
-  public blockedUsers: ManyToMany<typeof User>;
-
-  @computed()
-  public get blocked() {
-    return this.$extras.blocked;
-  }
-
-  @computed()
-  public get isBlocked() {
-    return this.$extras.isBlocked;
-  }
-
   @computed()
   public get friendship() {
     return this.$extras.friendship;

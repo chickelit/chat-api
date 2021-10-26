@@ -12,22 +12,6 @@ export default class MainController {
 
     const user = await User.findByOrFail("userName", username);
 
-    const blocked = await Database.query()
-      .from("user_blocks")
-      .where({
-        user_id: user.id,
-        blocked_user_id: auth.user!.id
-      })
-      .first();
-
-    const isBlocked = await Database.query()
-      .from("user_blocks")
-      .where({
-        user_id: auth.user!.id,
-        blocked_user_id: user.id
-      })
-      .first();
-
     const friendship = await Database.query()
       .from("friendships")
       .where({
@@ -36,8 +20,6 @@ export default class MainController {
       })
       .first();
 
-    user.$extras.blocked = !!blocked;
-    user.$extras.isBlocked = !!isBlocked;
     user.$extras.friendship = !!friendship;
 
     await user.load("avatar");

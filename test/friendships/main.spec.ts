@@ -4,7 +4,6 @@ import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
 import {
   addFriends,
-  blockUsers,
   request,
   sendFriendshipRequests,
   generateToken
@@ -53,80 +52,6 @@ test.group("/friendships", async (group) => {
       .first();
 
     assert.isNull(friendshipRequest);
-  });
-
-  test("[store] - should not be able to accept a friendship request when you are blocked", async (assert) => {
-    const { user: friend, token: friendToken } = await generateToken();
-    const { user, token } = await generateToken();
-
-    await sendFriendshipRequests(user.id, [friendToken]);
-    await blockUsers(friendToken, [user]);
-
-    await request
-      .post("/friendships")
-      .send({ userId: friend.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-
-    const friendship = [
-      await Database.query()
-        .from("friendships")
-        .where({
-          user_id: user.id,
-          friend_id: friend.id
-        })
-        .first(),
-      await Database.query()
-        .from("friendships")
-        .where({ user_id: friend.id, friend_id: user.id })
-        .first()
-    ].every((condition: any) => !!condition);
-
-    assert.isFalse(friendship);
-
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: friend.id, friend_id: user.id })
-      .first();
-
-    assert.exists(friendshipRequest);
-  });
-
-  test("[store] - should not be able to accept a friendship request when your friend is blocked", async (assert) => {
-    const { user: friend, token: friendToken } = await generateToken();
-    const { user, token } = await generateToken();
-
-    await sendFriendshipRequests(user.id, [friendToken]);
-    await blockUsers(token, [friend]);
-
-    await request
-      .post("/friendships")
-      .send({ userId: friend.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-
-    const friendship = [
-      await Database.query()
-        .from("friendships")
-        .where({
-          user_id: user.id,
-          friend_id: friend.id
-        })
-        .first(),
-      await Database.query()
-        .from("friendships")
-        .where({ user_id: friend.id, friend_id: user.id })
-        .first()
-    ].every((condition: any) => !!condition);
-
-    assert.isFalse(friendship);
-
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: friend.id, friend_id: user.id })
-      .first();
-
-    assert.exists(friendshipRequest);
   });
 
   test("[store] - should fail when trying to accept a friendship request that does not exist", async (assert) => {
@@ -208,12 +133,7 @@ test.group("/friendships", async (group) => {
       return await generateToken();
     });
     const friends = await Promise.all(queries);
-    const blockedFriends = friends
-      .slice(1, 5)
-      .map((userWithToken) => userWithToken.user);
-
     await addFriends({ user, token }, friends);
-    await blockUsers(token, blockedFriends);
 
     const { body } = await request
       .get("/friendships?page=1&perPage=20")
@@ -228,16 +148,6 @@ test.group("/friendships", async (group) => {
       const isValid = body.data.some((friend: User) => {
         return user.id === friend.id;
       });
-
-      assert.isTrue(isValid);
-    });
-
-    const findBlockedUsers = body.data.filter((user) => user.isBlocked);
-
-    assert.equal(findBlockedUsers.length, blockedFriends.length);
-
-    findBlockedUsers.forEach((blockedUser) => {
-      const isValid = blockedFriends.some((user) => user.id === blockedUser.id);
 
       assert.isTrue(isValid);
     });

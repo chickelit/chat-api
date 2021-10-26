@@ -1,7 +1,7 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
-import { addFriends, blockUsers, generateToken, request } from "Test/utils";
+import { addFriends, generateToken, request } from "Test/utils";
 
 test.group("/users/search", async (group) => {
   group.beforeEach(async () => {
@@ -35,8 +35,8 @@ test.group("/users/search", async (group) => {
     const queryUserWithToken = await generateToken();
     const { user, token } = await generateToken();
 
+    /* --- */
     await addFriends(queryUserWithToken, [{ user, token }]);
-    await blockUsers(token, [queryUserWithToken.user]);
 
     const { body } = await request
       .get(`/users/search?username=${queryUserWithToken.user.username}`)
@@ -51,13 +51,9 @@ test.group("/users/search", async (group) => {
     assert.deepEqual(body.email, queryUserWithToken.user.email);
     assert.deepEqual(body.name, queryUserWithToken.user.name);
     assert.deepEqual(body.username, queryUserWithToken.user.username);
-    assert.exists(body.blocked);
-    assert.exists(body.isBlocked);
     assert.exists(body.friendship);
-    assert.isFalse(body.blocked);
 
     /* --- */
-    assert.isTrue(body.isBlocked);
     assert.isTrue(body.friendship);
   });
 });

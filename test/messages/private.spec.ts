@@ -1,12 +1,6 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import test from "japa";
-import {
-  request,
-  generateToken,
-  addFriends,
-  blockUsers,
-  sendMessages
-} from "Test/utils";
+import { request, generateToken, addFriends, sendMessages } from "Test/utils";
 import faker from "faker";
 
 test.group("/messages/conversation", async (group) => {
@@ -76,58 +70,6 @@ test.group("/messages/conversation", async (group) => {
       .send({ userId: friend.id })
       .set("authorization", `bearer ${userToken}`)
       .expect(200);
-
-    await request
-      .post("/messages/conversation/text")
-      .send({
-        conversationId,
-        content: faker.lorem.paragraph()
-      })
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-  });
-
-  test("[store] - should fail when trying to send a message and you are blocked", async () => {
-    const { user, token } = await generateToken();
-    const { user: friend, token: friendToken } = await generateToken();
-
-    await addFriends({ user, token }, [{ user: friend, token: friendToken }]);
-
-    const {
-      body: { id: conversationId }
-    } = await request
-      .post("/conversations")
-      .send({ userId: friend.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    await blockUsers(friendToken, [user]);
-
-    await request
-      .post("/messages/conversation/text")
-      .send({
-        conversationId,
-        content: faker.lorem.paragraph()
-      })
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-  });
-
-  test("[store] - should fail when trying to send a message and the other user is blocked", async () => {
-    const { user, token } = await generateToken();
-    const { user: friend, token: friendToken } = await generateToken();
-
-    await addFriends({ user, token }, [{ user: friend, token: friendToken }]);
-
-    const {
-      body: { id: conversationId }
-    } = await request
-      .post("/conversations")
-      .send({ userId: friend.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    await blockUsers(token, [friend]);
 
     await request
       .post("/messages/conversation/text")
@@ -227,52 +169,6 @@ test.group("/messages/conversation", async (group) => {
       .send({ userId: friend.id })
       .set("authorization", `bearer ${userToken}`)
       .expect(200);
-
-    await request
-      .post(`/messages/conversation/${conversationId}/media`)
-      .attach("file", "test/assets/media.jpg")
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-  });
-
-  test("[store] - should fail when trying to send a media and you are blocked", async () => {
-    const { user, token } = await generateToken();
-    const { user: friend, token: friendToken } = await generateToken();
-
-    await addFriends({ user, token }, [{ user: friend, token: friendToken }]);
-
-    const {
-      body: { id: conversationId }
-    } = await request
-      .post("/conversations")
-      .send({ userId: friend.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    await blockUsers(friendToken, [user]);
-
-    await request
-      .post(`/messages/conversation/${conversationId}/media`)
-      .attach("file", "test/assets/media.jpg")
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-  });
-
-  test("[store] - should fail when trying to send a media and the other user is blocked", async () => {
-    const { user, token } = await generateToken();
-    const { user: friend, token: friendToken } = await generateToken();
-
-    await addFriends({ user, token }, [{ user: friend, token: friendToken }]);
-
-    const {
-      body: { id: conversationId }
-    } = await request
-      .post("/conversations")
-      .send({ userId: friend.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    await blockUsers(token, [friend]);
 
     await request
       .post(`/messages/conversation/${conversationId}/media`)

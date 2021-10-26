@@ -11,22 +11,6 @@ export default class MediaController {
 
     const conversation = await Conversation.findOrFail(params.id);
 
-    const isBlocked = await Database.query()
-      .from("user_blocks")
-      .where({
-        user_id: conversation.userIdOne,
-        blocked_user_id: conversation.userIdTwo
-      })
-      .orWhere({
-        user_id: conversation.userIdTwo,
-        blocked_user_id: conversation.userIdOne
-      })
-      .first();
-
-    if (isBlocked) {
-      return response.badRequest();
-    }
-
     if (![conversation.userIdOne, conversation.userIdTwo].includes(user.id)) {
       return response.badRequest();
     }

@@ -23,21 +23,6 @@ export default class MainController {
     const queries = friends.map(async (friend) => {
       await friend.load("avatar");
 
-      const blocked = await friend
-        .related("blockedUsers")
-        .query()
-        .where({ blocked_user_id: user.id })
-        .first();
-
-      const isBlocked = await user
-        .related("blockedUsers")
-        .query()
-        .where({ blocked_user_id: friend.id })
-        .first();
-
-      friend.$extras.blocked = blocked;
-      friend.$extras.isBlocked = isBlocked;
-
       return friend;
     });
 
@@ -54,23 +39,13 @@ export default class MainController {
       return response.badRequest();
     }
 
-    const condition = [
-      await Database.query()
-        .from("user_blocks")
-        .where({ user_id: user.id, blocked_user_id: userId })
-        .first(),
-      await Database.query()
-        .from("user_blocks")
-        .where({ user_id: userId, blocked_user_id: user.id })
-        .first(),
-      !(await user
-        .related("pendingFriendshipRequests")
-        .query()
-        .where({ user_id: userId })
-        .first())
-    ].some((condition) => condition);
+    const pendingFriendshipRequest = await user
+      .related("pendingFriendshipRequests")
+      .query()
+      .where({ user_id: userId })
+      .first();
 
-    if (condition) {
+    if (!pendingFriendshipRequest) {
       return response.badRequest();
     }
 
@@ -93,7 +68,7 @@ export default class MainController {
       return response.badRequest();
     }
 
-    const condition = [
+    const friendship = [
       await Database.query()
         .from("friendships")
         .where({ user_id: user.id, friend_id: +params.id })
@@ -104,7 +79,7 @@ export default class MainController {
         .first()
     ].every((condition) => condition);
 
-    if (!condition) {
+    if (!friendship) {
       return response.badRequest();
     }
 

@@ -3,7 +3,7 @@ import test from "japa";
 import { generateToken, request } from "Test/utils";
 import faker from "faker";
 
-test.group("/members", async (group) => {
+test.group("/groups/:id/cover", async (group) => {
   group.beforeEach(async () => {
     await Database.beginGlobalTransaction();
   });

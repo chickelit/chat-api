@@ -5,4 +5,3 @@ export { default as Conversation } from "./Conversation";
 export { default as Group } from "./Group";
 export { default as Message } from "./Message";
 export { default as FriendshipRequest } from "./FriendshipRequest";
-export { default as UserBlock } from "./UserBlock";

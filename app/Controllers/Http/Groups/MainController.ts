@@ -15,6 +15,7 @@ export default class GroupsController {
     const user = auth.user!;
 
     const groups = await user.related("groups").query().paginate(page, perPage);
+
     await user.load("groups", (group) => {
       group.preload("groupCover");
     });

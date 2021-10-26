@@ -3,13 +3,7 @@ import { Group, User } from "App/Models";
 import { GroupFactory } from "Database/factories/GroupFactory";
 import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
-import {
-  addFriends,
-  addMembers,
-  blockUsers,
-  generateToken,
-  request
-} from "Test/utils";
+import { addFriends, addMembers, generateToken, request } from "Test/utils";
 import faker from "faker";
 
 test.group("/members", async (group) => {
@@ -69,62 +63,6 @@ test.group("/members", async (group) => {
     const group = await GroupFactory.merge({ userId: groupOwner.id }).create();
 
     await addFriends({ user, token }, [{ user: member, token: memberToken }]);
-
-    await request
-      .post("/members")
-      .send({
-        userId: member.id,
-        groupId: group.id
-      })
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-
-    const isMember = await Database.query()
-      .from("group_members")
-      .where({
-        user_id: member.id,
-        group_id: group.id
-      })
-      .first();
-
-    assert.isNull(isMember);
-  });
-
-  test("[store] - should fail when trying to add someone to a group if you are blocked", async (assert) => {
-    const { user, token } = await generateToken();
-    const { user: member, token: memberToken } = await generateToken();
-    const group = await GroupFactory.merge({ userId: user.id }).create();
-
-    await addFriends({ user, token }, [{ user: member, token: memberToken }]);
-    await blockUsers(memberToken, [user]);
-
-    await request
-      .post("/members")
-      .send({
-        userId: member.id,
-        groupId: group.id
-      })
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-
-    const isMember = await Database.query()
-      .from("group_members")
-      .where({
-        user_id: member.id,
-        group_id: group.id
-      })
-      .first();
-
-    assert.isNull(isMember);
-  });
-
-  test("[store] - should fail when trying to add someone to a group if the person is blocked", async (assert) => {
-    const { user, token } = await generateToken();
-    const { user: member, token: memberToken } = await generateToken();
-    const group = await GroupFactory.merge({ userId: user.id }).create();
-
-    await addFriends({ user, token }, [{ user: member, token: memberToken }]);
-    await blockUsers(token, [member]);
 
     await request
       .post("/members")
@@ -253,12 +191,6 @@ test.group("/members", async (group) => {
     await addFriends({ user, token }, users);
     await addMembers(groupId, { user, token }, users);
 
-    const blockedUsers = users
-      .slice(1, 5)
-      .map((userWithToken) => userWithToken.user);
-
-    await blockUsers(token, blockedUsers);
-
     const { body } = await request
       .get(`/members/${groupId}?page=1&perPage=20`)
       .set("authorization", `bearer ${token}`)
@@ -271,18 +203,6 @@ test.group("/members", async (group) => {
     users.forEach(({ user }) => {
       const isValid = body.data.some((member: User) => {
         return user.id === member.id;
-      });
-
-      assert.isTrue(isValid);
-    });
-
-    const findBlockedFriends = users.filter(
-      ({ user: friend }) => friend.isBlocked
-    );
-
-    findBlockedFriends.forEach(({ user }) => {
-      const isValid = body.data.some((member: User) => {
-        return user.isBlocked === member.isBlocked;
       });
 
       assert.isTrue(isValid);

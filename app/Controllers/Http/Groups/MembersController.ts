@@ -16,18 +16,18 @@ export default class MembersController {
       return response.badRequest();
     }
 
-    const isBlocked = await Database.query()
-      .from("user_blocks")
-      .where({ user_id: userId, blocked_user_id: auth.user!.id })
-      .orWhere({ user_id: auth.user!.id, blocked_user_id: userId })
-      .first();
+    const friendship = [
+      await Database.query()
+        .from("friendships")
+        .where({ user_id: userId, friend_id: auth.user!.id })
+        .first(),
+      await Database.query()
+        .from("friendships")
+        .where({ user_id: userId, friend_id: auth.user!.id })
+        .first()
+    ].every((condition) => condition);
 
-    const isFriend = await Database.query()
-      .from("friendships")
-      .where({ user_id: userId, friend_id: auth.user!.id })
-      .first();
-
-    if (isBlocked || !isFriend) {
+    if (!friendship) {
       return response.badRequest();
     }
 
@@ -68,35 +68,6 @@ export default class MembersController {
       .related("members")
       .query()
       .paginate(page, perPage);
-
-    const queries = members.map(async (member) => {
-      if (member.id !== user.id) {
-        const blocked = await Database.query()
-          .from("user_blocks")
-          .where({
-            user_id: member.id,
-            blocked_user_id: user.id
-          })
-          .first();
-
-        const isBlocked = await Database.query()
-          .from("user_blocks")
-          .where({
-            user_id: user.id,
-            blocked_user_id: member.id
-          })
-          .first();
-
-        member.$extras.blocked = !!blocked;
-        member.$extras.isBlocked = !!isBlocked;
-      }
-
-      await member.load("avatar");
-
-      return member;
-    });
-
-    members.toJSON().data = await Promise.all(queries);
 
     return members;
   }

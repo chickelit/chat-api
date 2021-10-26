@@ -1,12 +1,7 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import { User } from "App/Models";
 import test from "japa";
-import {
-  blockUsers,
-  generateToken,
-  request,
-  sendFriendshipRequests
-} from "../utils";
+import { generateToken, request, sendFriendshipRequests } from "../utils";
 
 test.group("/friendships/requests", async (group) => {
   group.beforeEach(async () => {
@@ -102,47 +97,6 @@ test.group("/friendships/requests", async (group) => {
     assert.isNull(friendshipRequestTwo);
   });
 
-  test("[store] - should fail when trying to send a friendship request to a blocked user", async (assert) => {
-    const { user, token } = await generateToken();
-    const { user: blockedUser } = await generateToken();
-
-    await blockUsers(token, [blockedUser]);
-
-    await request
-      .post("/friendships/requests")
-      .send({ userId: blockedUser.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: user.id, friend_id: blockedUser.id })
-      .first();
-
-    assert.isNull(friendshipRequest);
-  });
-
-  test("[store] - should fail when trying to send a friendship request and you are blocked", async (assert) => {
-    const { user, token } = await generateToken();
-    const { user: blockedUser, token: blockedUserToken } =
-      await generateToken();
-
-    await blockUsers(token, [blockedUser]);
-
-    await request
-      .post("/friendships/requests")
-      .send({ userId: user.id })
-      .set("authorization", `bearer ${blockedUserToken}`)
-      .expect(400);
-
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: blockedUser.id, friend_id: user.id })
-      .first();
-
-    assert.isNull(friendshipRequest);
-  });
-
   test("[index] - should be able to list authenticated user pending friendship requests", async (assert) => {
     const { user, token } = await generateToken();
     const array = Array(10).fill(false);
@@ -182,16 +136,10 @@ test.group("/friendships/requests", async (group) => {
     });
     const users = await Promise.all(queries);
 
-    const blockedUsers = users
-      .slice(1, 5)
-      .map((userWithToken) => userWithToken.user);
-
     await sendFriendshipRequests(
       user.id,
       users.map((user) => user.token)
     );
-
-    await blockUsers(token, blockedUsers);
 
     const { body } = await request
       .get("/friendships/requests?page=1&perPage=20")
@@ -205,18 +153,6 @@ test.group("/friendships/requests", async (group) => {
     users.forEach(({ user }) => {
       const isValid = body.data.some((friendshipRequestUser: User) => {
         return user.id === friendshipRequestUser.id;
-      });
-
-      assert.isTrue(isValid);
-    });
-
-    const findBlockedFriends = users.filter(
-      ({ user: friend }) => friend.isBlocked
-    );
-
-    findBlockedFriends.forEach(({ user }) => {
-      const isValid = body.data.some((friend: User) => {
-        return user.isBlocked === friend.isBlocked;
       });
 
       assert.isTrue(isValid);

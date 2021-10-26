@@ -55,18 +55,6 @@ export default class MainController {
       return response.badRequest();
     }
 
-    const isBlocked = await Database.query()
-      .from("user_blocks")
-      .where({
-        user_id: conversation.userIdOne,
-        blocked_user_id: conversation.userIdTwo
-      })
-      .orWhere({
-        user_id: conversation.userIdTwo,
-        blocked_user_id: conversation.userIdOne
-      })
-      .first();
-
     const friendship = await Database.query()
       .from("friendships")
       .where({
@@ -76,10 +64,6 @@ export default class MainController {
       .first();
 
     if (!friendship) {
-      return response.badRequest();
-    }
-
-    if (isBlocked) {
       return response.badRequest();
     }
 

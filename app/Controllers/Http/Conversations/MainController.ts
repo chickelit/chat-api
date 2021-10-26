@@ -27,39 +27,6 @@ export default class MainController {
         query.whereNot({ id: auth.user!.id });
         query.preload("avatar");
       });
-      const blocked =
-        conversation.userIdOne === auth.user!.id
-          ? await Database.query()
-              .from("user_blocks")
-              .where({
-                user_id: conversation.userIdTwo,
-                blocked_user_id: conversation.userIdOne
-              })
-              .first()
-          : await Database.query()
-              .from("user_blocks")
-              .where({
-                user_id: conversation.userIdOne,
-                blocked_user_id: conversation.userIdTwo
-              })
-              .first();
-
-      const isBlocked =
-        conversation.userIdTwo === auth.user!.id
-          ? await Database.query()
-              .from("user_blocks")
-              .where({
-                user_id: conversation.userIdTwo,
-                blocked_user_id: conversation.userIdOne
-              })
-              .first()
-          : await Database.query()
-              .from("user_blocks")
-              .where({
-                user_id: conversation.userIdOne,
-                blocked_user_id: conversation.userIdTwo
-              })
-              .first();
 
       const latestMessage = await conversation
         .related("messages")
@@ -92,8 +59,6 @@ export default class MainController {
         await latestMessage.load("media");
       }
 
-      conversation.$extras.blocked = !!blocked;
-      conversation.$extras.isBlocked = !!isBlocked;
       conversation.$extras.friendship = !!friendship;
       conversation.$extras.latestMessage = latestMessage;
 
@@ -119,14 +84,6 @@ export default class MainController {
 
     const condition = [
       await Database.query()
-        .from("user_blocks")
-        .where({ user_id: user.id, blocked_user_id: userId })
-        .first(),
-      await Database.query()
-        .from("user_blocks")
-        .where({ user_id: userId, blocked_user_id: user.id })
-        .first(),
-      await Database.query()
         .from("conversations")
         .where({ user_id_one: user.id, user_id_two: userId })
         .orWhere({ user_id_one: userId, user_id_two: user.id })
@@ -134,6 +91,10 @@ export default class MainController {
       !(await Database.query()
         .from("friendships")
         .where({ user_id: user.id, friend_id: userId })
+        .first()),
+      !(await Database.query()
+        .from("friendships")
+        .where({ user_id: userId, friend_id: user.id })
         .first())
     ].some((condition) => condition);
 
@@ -176,40 +137,6 @@ export default class MainController {
       query.preload("avatar");
     });
 
-    const blocked =
-      conversation.userIdOne === auth.user!.id
-        ? await Database.query()
-            .from("user_blocks")
-            .where({
-              user_id: conversation.userIdTwo,
-              blocked_user_id: conversation.userIdOne
-            })
-            .first()
-        : await Database.query()
-            .from("user_blocks")
-            .where({
-              user_id: conversation.userIdOne,
-              blocked_user_id: conversation.userIdTwo
-            })
-            .first();
-
-    const isBlocked =
-      conversation.userIdTwo === auth.user!.id
-        ? await Database.query()
-            .from("user_blocks")
-            .where({
-              user_id: conversation.userIdTwo,
-              blocked_user_id: conversation.userIdOne
-            })
-            .first()
-        : await Database.query()
-            .from("user_blocks")
-            .where({
-              user_id: conversation.userIdOne,
-              blocked_user_id: conversation.userIdTwo
-            })
-            .first();
-
     const latestMessage = await conversation
       .related("messages")
       .query()
@@ -224,8 +151,6 @@ export default class MainController {
       await latestMessage.load("media");
     }
 
-    conversation.$extras.blocked = !!blocked;
-    conversation.$extras.isBlocked = !!isBlocked;
     conversation.$extras.latestMessage = latestMessage;
 
     const conversationInJSON = conversation.toJSON();

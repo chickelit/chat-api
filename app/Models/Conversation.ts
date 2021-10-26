@@ -50,16 +50,6 @@ export default class Conversation extends BaseModel {
   public messages: HasMany<typeof Message>;
 
   @computed()
-  public get blocked() {
-    return this.$extras.blocked;
-  }
-
-  @computed()
-  public get isBlocked() {
-    return this.$extras.isBlocked;
-  }
-
-  @computed()
   public get latestMessage() {
     return this.$extras.latestMessage;
   }
