@@ -16,7 +16,6 @@
 - [x] Autenticação
 - [x] Recuperação de senha
 - [x] Upload de avatar
-- [x] Bloquear/desbloquear usuário
 - [x] Amizades
 - [x] Conversas privadas
 - [x] Conversas em grupo
