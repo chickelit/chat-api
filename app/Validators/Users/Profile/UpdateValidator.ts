@@ -7,7 +7,9 @@ export default class UpdateValidator {
   public schema = schema.create({
     name: schema.string.optional({ trim: true }),
     username: schema.string.optional({ trim: true }, [
-      rules.unique({ table: "users", column: "username" })
+      rules.unique({ table: "users", column: "username" }),
+      rules.username(),
+      rules.maxLength(32)
     ])
   });
 

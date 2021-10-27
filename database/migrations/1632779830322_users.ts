@@ -10,7 +10,7 @@ export default class UsersSchema extends BaseSchema {
       table.string("password", 180);
       table.string("remember_me_token").nullable();
       table.string("name");
-      table.string("username").unique();
+      table.string("username", 32).unique();
       table.timestamp("created_at", { useTz: true }).notNullable();
       table.timestamp("updated_at", { useTz: true }).notNullable();
     });

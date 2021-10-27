@@ -33,21 +33,23 @@ test.group("/users/profile", async (group) => {
 
   test("[update] - should be able to update authenticated user data", async (assert) => {
     const { user, token } = await generateToken();
+    const newData = {
+      name: faker.name.findName(),
+      username: faker.internet.userName()
+    };
 
     const { body } = await request
       .put("/users/profile")
       .set("authorization", `bearer ${token}`)
-      .send({
-        name: faker.name.findName(),
-        username: faker.internet.userName()
-      });
+      .send(newData)
+      .expect(200);
 
     assert.notEqual(user.name, body.name);
     assert.notEqual(user.username, body.username);
 
     const updatedUser = await User.findOrFail(user.id);
 
-    assert.deepEqual(body.name, updatedUser.name);
-    assert.deepEqual(body.username, updatedUser.username);
+    assert.deepEqual(newData.name, updatedUser.name);
+    assert.deepEqual(newData.username, updatedUser.username);
   });
 });
