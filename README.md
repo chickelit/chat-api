@@ -83,5 +83,5 @@ As seguintes ferramentas foram usadas na construção do projeto:
   <br />
   <sub style="color: lightblue; text-decoration: none;"><b>José Anselmo</b></sub>
 
-[![Instagram Badge](https://img.shields.io/badge/-@tete627-FCAF45?style=flat-square&labelColor=E1306C&logo=instagram&logoColor=white&link=https://instagram.com/tete627)](https://instagram.com/tete627)
+[![Instagram Badge](https://img.shields.io/badge/-@tete627-FCAF45?style=flat-square&labelColor=E1306C&logo=instagram&logoColor=white&link=https://instagram.com/zezin_627)](https://instagram.com/zezin_627)
 </a>
