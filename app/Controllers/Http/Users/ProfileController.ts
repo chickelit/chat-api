@@ -17,6 +17,8 @@ export default class ProfilesController {
     user.merge(data);
     await user.save();
 
+    await user.load("avatar");
+
     return user;
   }
 }
