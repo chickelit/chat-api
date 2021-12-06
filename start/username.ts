@@ -61,7 +61,7 @@ validator.rule("username", (value, _, options) => {
   if (failed) {
     options.errorReporter.report(
       options.pointer,
-      "username",
+      "alpha",
       "username validation failed",
       options.arrayExpressionPointer
     );
