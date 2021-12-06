@@ -38,9 +38,6 @@ export default class Conversation extends BaseModel {
   })
   public userTwo: BelongsTo<typeof User>;
 
-  @belongsTo(() => User)
-  public user: BelongsTo<typeof User>;
-
   @hasMany(() => Message, {
     onQuery: (query) => {
       query.whereNotNull("conversation_id");
@@ -52,6 +49,11 @@ export default class Conversation extends BaseModel {
   @computed()
   public get latestMessage() {
     return this.$extras.latestMessage;
+  }
+
+  @computed()
+  public get user() {
+    return this.$extras.user;
   }
 
   @computed()

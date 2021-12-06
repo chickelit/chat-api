@@ -61,16 +61,9 @@ export default class MainController {
 
       conversation.$extras.friendship = !!friendship;
       conversation.$extras.latestMessage = latestMessage;
+      conversation.$extras.user = conversation.userOne || conversation.userTwo;
 
-      const conversationInJSON = conversation.toJSON();
-
-      conversationInJSON.user =
-        conversationInJSON.userOne || conversationInJSON.userTwo;
-
-      delete conversationInJSON["userOne"];
-      delete conversationInJSON["userTwo"];
-
-      return conversationInJSON;
+      return conversation;
     });
 
     conversations.toJSON().data = await Promise.all(queries);
