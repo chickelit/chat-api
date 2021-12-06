@@ -1,3 +1,5 @@
+<div id="sobre"></div>
+
 <h1 align="center">chatAPI</h1>
 <p align="center">API de conversas em tempo real</p>
 <div align="center">
@@ -10,6 +12,25 @@
 <h4 align="center"> 
 	🚧  Em desenvolvimento...  🚧
 </h4>
+
+<div id="tabela-de-conteudos"></div>
+
+Tabela de conteúdos
+=================
+<!--ts-->
+  * [Sobre](#sobre)
+  * [Tabela de conteúdo](#tabela-de-conteudos)
+  * [Features](#features)
+  * [Pré-requesitos](#pre-requesitos)
+  * [Como rodar](#como-rodar)
+  * [Como rodar os testes](#rodar-testes)
+  * [Tecnologias](#tecnologias)
+  * [Autor](#autor)
+
+<!--te-->
+
+ <div id="features"></div>
+
 <h3>Features</h3>
 
 - [x] Cadastro de usuário
@@ -23,11 +44,15 @@
 - [x] Mensagens (texto e mídia)
 - [ ] Socket.io
 
+ <div id="pre-requesitos"></div>
+
 ### Pré-requisitos
 
 Antes de começar, você vai precisar ter instalado em sua máquina as seguintes ferramentas:
 [Git](https://git-scm.com), [Node.js](https://nodejs.org/en/).
 Além disto é bom ter um editor para trabalhar com o código como [VSCode](https://code.visualstudio.com/)
+
+<div id="como-rodar"></div>
 
 ### 🎲 Rodando o Back End
 
@@ -49,6 +74,8 @@ $ npm run dev
 # O servidor iniciará na porta:3333 - acesse http://localhost:3333
 ```
 
+<div id="rodar-testes"></div>
+
 ### 🎲 Rodando os testes
 
 ```bash
@@ -60,6 +87,8 @@ $ npm run japa
 # Ou, para executar os testes e observar mudanças nos arquivos
 $ npm run japa:watch
 ```
+
+<div id="tecnologias"></div>
 
 ### 🛠 Tecnologias
 
@@ -74,6 +103,9 @@ As seguintes ferramentas foram usadas na construção do projeto:
 - [Adonis Mail](https://www.npmjs.com/package/@adonisjs/mail)
 - [API tokens](https://docs.adonisjs.com/guides/auth/api-tokens-guard)
 - [Docker](https://www.docker.com/)
+
+<div id="autor"></div>
+
 ### Autor
 
 ---
