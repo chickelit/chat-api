@@ -14,5 +14,6 @@ export default class IndexSeeder extends BaseSeeder {
     await this.runSeeder(await import("../Users"));
     await this.runSeeder(await import("../Friendships"));
     await this.runSeeder(await import("../Conversations"));
+    await this.runSeeder(await import("../Groups"));
   }
 }
