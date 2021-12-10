@@ -1,16 +1,16 @@
 import BaseSeeder from "@ioc:Adonis/Lucid/Seeder";
-import { Friendship, User } from "App/Models";
+import { User } from "App/Models";
 
 export default class FriendshipsSeeder extends BaseSeeder {
   public async run() {
     const users = await User.query();
-    const me = users.find((user) => user.username === "me");
+    const me = await User.findByOrFail("email", "me@gmail.com");
 
     const queries = users
       .filter((user) => user.username !== "me")
       .map(async (user) => {
-        await Friendship.create({ userId: me?.id, friendId: user.id });
-        await Friendship.create({ userId: user.id, friendId: me?.id });
+        await user.related("friends").attach([me.id]);
+        await me.related("friends").attach([user.id]);
       });
 
     await Promise.all(queries);
