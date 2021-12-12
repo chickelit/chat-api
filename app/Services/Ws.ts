@@ -6,7 +6,11 @@ class Ws {
   public io: Server;
 
   public start(callback: (socket: Socket) => void) {
-    this.io = new Server(Adonis.instance!);
+    this.io = new Server(Adonis.instance!, {
+      cors: {
+        origin: "*"
+      }
+    });
     this.io.on("connection", callback);
     this.isReady = true;
   }
