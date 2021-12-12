@@ -1,4 +1,4 @@
-import { ApplicationContract } from '@ioc:Adonis/Core/Application'
+import { ApplicationContract } from "@ioc:Adonis/Core/Application";
 
 export default class AppProvider {
   constructor(protected app: ApplicationContract) {}
@@ -12,7 +12,11 @@ export default class AppProvider {
   }
 
   public async ready() {
-    // App is ready
+    const App = await import("@ioc:Adonis/Core/Application");
+
+    if (App.default.environment === "web") {
+      await import("../start/socket");
+    }
   }
 
   public async shutdown() {
