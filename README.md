@@ -103,6 +103,7 @@ As seguintes ferramentas foram usadas na construção do projeto:
 - [Adonis Mail](https://www.npmjs.com/package/@adonisjs/mail)
 - [API tokens](https://docs.adonisjs.com/guides/auth/api-tokens-guard)
 - [Docker](https://www.docker.com/)
+- [Socket.io](https://socket.io/)
 
 <div id="autor"></div>
 
