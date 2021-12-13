@@ -37,7 +37,11 @@ export default class FriendshipRequest extends BaseModel {
     Ws.io
       .to(`user-${friendshipRequest.friendId}`)
       .emit("newFriendshipRequest", {
-        user: user
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        avatar: user.avatar
       });
   }
 }
