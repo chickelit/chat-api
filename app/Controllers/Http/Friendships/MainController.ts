@@ -1,6 +1,7 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
 import { User } from "App/Models";
+import Ws from "App/Services/Ws";
 import { StoreValidator } from "App/Validators/Friendships";
 
 export default class MainController {
@@ -54,9 +55,24 @@ export default class MainController {
     await user.related("friends").attach([userId]);
     await friend.related("friends").attach([user.id]);
 
-    await user.related("pendingFriendshipRequests").detach([userId]);
-
     await friend.load("avatar");
+    await user.load("avatar");
+
+    Ws.io.to(`user-${user.id}`).emit("newFriend", {
+      id: friend.id,
+      name: friend.name,
+      username: friend.username,
+      avatar: friend.avatar
+    });
+
+    Ws.io.to(`user-${friend.id}`).emit("newFriend", {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      avatar: user.avatar
+    });
+
+    await user.related("pendingFriendshipRequests").detach([userId]);
 
     return friend;
   }
