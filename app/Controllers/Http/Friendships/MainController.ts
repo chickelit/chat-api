@@ -72,6 +72,13 @@ export default class MainController {
       avatar: user.avatar
     });
 
+    Ws.io.to(`user-${friend.id}`).emit("friendshipRequestAccepted", {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      avatar: user.avatar
+    });
+
     await user.related("pendingFriendshipRequests").detach([userId]);
 
     return friend;
