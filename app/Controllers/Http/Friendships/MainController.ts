@@ -19,6 +19,7 @@ export default class MainController {
     const friends = await user
       .related("friends")
       .query()
+      .orderBy("created_at", "asc")
       .paginate(page, perPage);
 
     const queries = friends.map(async (friend) => {
