@@ -109,6 +109,8 @@ export default class MainController {
 
     const friend = await User.findOrFail(params.id);
 
+    Ws.io.to(`user-${friend.id}`).emit("deleteFriend", user.id);
+
     await user.related("friends").detach([friend.id]);
     await friend.related("friends").detach([user.id]);
   }
