@@ -75,24 +75,44 @@ export default class MainController {
     const { userId } = await request.validate(StoreValidator);
     const user = auth.user!;
 
-    const condition = [
+    const existingConversation = await Database.query()
+      .from("conversations")
+      .where({ user_id_one: user.id, user_id_two: userId })
+      .orWhere({ user_id_one: userId, user_id_two: user.id })
+      .first();
+
+    const friendship = [
       await Database.query()
-        .from("conversations")
-        .where({ user_id_one: user.id, user_id_two: userId })
-        .orWhere({ user_id_one: userId, user_id_two: user.id })
-        .first(),
-      !(await Database.query()
         .from("friendships")
         .where({ user_id: user.id, friend_id: userId })
-        .first()),
-      !(await Database.query()
+        .first(),
+      await Database.query()
         .from("friendships")
         .where({ user_id: userId, friend_id: user.id })
-        .first())
-    ].some((condition) => condition);
+        .first()
+    ].every((condition) => condition);
 
-    if (condition) {
-      return response.badRequest();
+    if (!friendship) {
+      return response.status(400).json({
+        errors: [
+          {
+            rule: "exists",
+            target: "friendship"
+          }
+        ]
+      });
+    }
+
+    if (existingConversation) {
+      return response.status(400).json({
+        errors: [
+          {
+            rule: "unique",
+            target: "conversation",
+            conversationId: existingConversation.id
+          }
+        ]
+      });
     }
 
     const conversation = await Conversation.create({
@@ -100,15 +120,16 @@ export default class MainController {
       userIdTwo: userId
     });
 
-    const conversationInJSON = conversation.toJSON();
+    await conversation.load("userOne", (user) => {
+      user.preload("avatar");
+    });
+    await conversation.load("userTwo", (user) => {
+      user.preload("avatar");
+    });
 
-    conversationInJSON.user =
-      conversationInJSON.userOne || conversationInJSON.userTwo;
+    conversation.$extras.user = conversation.userOne || conversation.userTwo;
 
-    delete conversationInJSON["userOne"];
-    delete conversationInJSON["userTwo"];
-
-    return conversationInJSON;
+    return conversation;
   }
 
   public async show({ response, params, auth }: HttpContextContract) {
