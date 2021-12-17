@@ -29,7 +29,7 @@ Tabela de conteúdos
 
 <!--te-->
 
- <div id="features"></div>
+<div id="features"></div>
 
 <h3>Features</h3>
 
@@ -42,7 +42,7 @@ Tabela de conteúdos
 - [x] Conversas em grupo
 - [x] Imagem do grupo
 - [x] Mensagens (texto e mídia)
-- [ ] Socket.io
+- [x] Socket.io
 
  <div id="pre-requesitos"></div>
 
