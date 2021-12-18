@@ -66,16 +66,6 @@ export default class GroupsController {
       .where({ group_id: params.id })
       .firstOrFail();
 
-    await group.load("members", (query) => {
-      query.preload("avatar");
-    });
-
-    await group.load("messages", (query) => {
-      query.preload("owner", (query) => {
-        query.preload("avatar");
-      });
-    });
-
     const latestMessage = (await group
       .related("messages")
       .query()
@@ -83,10 +73,10 @@ export default class GroupsController {
 
     if (latestMessage) {
       await latestMessage.load("owner");
-    }
 
-    if (latestMessage && latestMessage.category === "media") {
-      await latestMessage.load("media");
+      if (latestMessage.category === "media") {
+        await latestMessage.load("media");
+      }
     }
 
     group.$extras.latestMessage = latestMessage;
