@@ -1,6 +1,7 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
 import { Conversation } from "App/Models";
+import Ws from "App/Services/Ws";
 import { StoreValidator } from "App/Validators/Conversations";
 
 export default class MainController {
@@ -120,14 +121,37 @@ export default class MainController {
       userIdTwo: userId
     });
 
-    await conversation.load("userOne", (user) => {
-      user.preload("avatar");
-    });
     await conversation.load("userTwo", (user) => {
       user.preload("avatar");
     });
+    await conversation.load("userOne", (user) => {
+      user.preload("avatar");
+    });
 
-    conversation.$extras.user = conversation.userOne || conversation.userTwo;
+    conversation.$extras.user =
+      conversation.userIdOne === user.id
+        ? conversation.userTwo
+        : conversation.userOne;
+
+    const { userOne, userTwo } = conversation;
+
+    const userOneConversation = {
+      id: conversation.id,
+      userIdOne: conversation.userIdOne,
+      userIdTwo: conversation.userIdTwo,
+      user: userTwo
+    };
+
+    const useTwoConversation = {
+      id: conversation.id,
+      userIdOne: conversation.userIdOne,
+      userIdTwo: conversation.userIdTwo,
+      user: userOne
+    };
+
+    Ws.io.to(`user-${userOne.id}`).emit("newConversation", userOneConversation);
+
+    Ws.io.to(`user-${userTwo.id}`).emit("newConversation", useTwoConversation);
 
     return conversation;
   }

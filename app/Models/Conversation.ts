@@ -1,6 +1,5 @@
 import { DateTime } from "luxon";
 import {
-  afterCreate,
   BaseModel,
   BelongsTo,
   belongsTo,
@@ -10,7 +9,6 @@ import {
   hasMany
 } from "@ioc:Adonis/Lucid/Orm";
 import { User, Message } from "./index";
-import Ws from "App/Services/Ws";
 
 export default class Conversation extends BaseModel {
   public static table = "conversations";
@@ -61,35 +59,5 @@ export default class Conversation extends BaseModel {
   @computed()
   public get friendship() {
     return this.$extras.friendship;
-  }
-
-  @afterCreate()
-  public static async sendConversation(conversation: Conversation) {
-    await conversation.load("userOne", (conversation) => {
-      conversation.preload("avatar");
-    });
-    await conversation.load("userTwo", (conversation) => {
-      conversation.preload("avatar");
-    });
-
-    const { userOne, userTwo } = conversation;
-
-    const userOneConversation = {
-      id: conversation.id,
-      userIdOne: conversation.userIdOne,
-      userIdTwo: conversation.userIdTwo,
-      user: userTwo
-    };
-
-    const useTwoConversation = {
-      id: conversation.id,
-      userIdOne: conversation.userIdOne,
-      userIdTwo: conversation.userIdTwo,
-      user: userOne
-    };
-
-    Ws.io.to(`user-${userOne.id}`).emit("newConversation", userOneConversation);
-
-    Ws.io.to(`user-${userTwo.id}`).emit("newConversation", useTwoConversation);
   }
 }
