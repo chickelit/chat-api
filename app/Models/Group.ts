@@ -1,6 +1,8 @@
 import { DateTime } from "luxon";
 import {
   BaseModel,
+  BelongsTo,
+  belongsTo,
   column,
   computed,
   HasMany,
@@ -51,6 +53,9 @@ export default class Group extends BaseModel {
     }
   })
   public messages: HasMany<typeof Message>;
+
+  @belongsTo(() => User)
+  public owner: BelongsTo<typeof User>;
 
   @computed()
   public get latestMessage() {

@@ -21,6 +21,9 @@ export default class GroupsController {
     });
 
     const queries = groups.map(async (group) => {
+      await group.load("owner", (owner) => {
+        owner.preload("avatar");
+      });
       await group.load("groupCover");
 
       const latestMessage = await Message.query()
@@ -65,6 +68,10 @@ export default class GroupsController {
       .query()
       .where({ group_id: params.id })
       .firstOrFail();
+
+    await group.load("owner", (owner) => {
+      owner.preload("avatar");
+    });
 
     const latestMessage = (await group
       .related("messages")

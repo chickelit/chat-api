@@ -1,5 +1,6 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
+import Ws from "App/Services/Ws";
 import { StoreValidator } from "App/Validators/FriendshipRequests";
 
 export default class RequestsController {
@@ -53,6 +54,14 @@ export default class RequestsController {
 
     await user.related("friendshipRequests").create({
       friendId: userId
+    });
+
+    Ws.io.to(`user-${userId}`).emit("newFriendshipRequest", {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      username: user.username,
+      avatar: user.avatar
     });
   }
 

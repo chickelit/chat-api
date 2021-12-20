@@ -60,13 +60,10 @@ export default class MembersController {
       })
       .firstOrFail();
 
-    await group.load("members", (member) => {
-      member.preload("avatar");
-    });
-
     const members = await group
       .related("members")
       .query()
+      .preload("avatar")
       .paginate(page, perPage);
 
     return members;
