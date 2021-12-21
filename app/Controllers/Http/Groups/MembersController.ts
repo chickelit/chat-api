@@ -1,6 +1,7 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
-import { Group } from "App/Models";
+import { Group, User } from "App/Models";
+import Ws from "App/Services/Ws";
 import { StoreValidator } from "App/Validators/Groups/Members";
 
 export default class MembersController {
@@ -40,6 +41,38 @@ export default class MembersController {
     }
 
     await group.related("members").attach([userId]);
+
+    const member = await User.findOrFail(userId);
+    await member.load("avatar");
+
+    Ws.io.to(`group-${groupId}`).emit("newMember", {
+      id: member.id,
+      name: member.name,
+      username: member.username,
+      avatar: member.avatar
+    });
+
+    await group.load("owner", (owner) => {
+      owner.preload("avatar");
+    });
+
+    await group.load("groupCover");
+
+    const latestMessage = await group
+      .related("messages")
+      .query()
+      .orderBy("created_at", "desc")
+      .first();
+
+    Ws.io.to(`user-${userId}`).emit("newGroup", {
+      id: group.id,
+      title: group.title,
+      createdAt: group.createdAt,
+      updatedAt: group.updatedAt,
+      owner: group.owner,
+      groupCover: group.groupCover,
+      latestMessage: latestMessage
+    });
   }
 
   public async index({ request, response, params, auth }: HttpContextContract) {
