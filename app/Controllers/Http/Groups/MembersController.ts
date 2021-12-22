@@ -46,10 +46,14 @@ export default class MembersController {
     await member.load("avatar");
 
     Ws.io.to(`group-${groupId}`).emit("newMember", {
-      id: member.id,
-      name: member.name,
-      username: member.username,
-      avatar: member.avatar
+      groupId,
+      user: {
+        groupId,
+        id: member.id,
+        name: member.name,
+        username: member.username,
+        avatar: member.avatar
+      }
     });
 
     await group.load("owner", (owner) => {
@@ -64,14 +68,22 @@ export default class MembersController {
       .orderBy("created_at", "desc")
       .first();
 
+    const user = auth.user!;
+
     Ws.io.to(`user-${userId}`).emit("newGroup", {
-      id: group.id,
-      title: group.title,
-      createdAt: group.createdAt,
-      updatedAt: group.updatedAt,
-      owner: group.owner,
-      groupCover: group.groupCover,
-      latestMessage: latestMessage
+      group: {
+        id: group.id,
+        title: group.title,
+        createdAt: group.createdAt,
+        updatedAt: group.updatedAt,
+        owner: group.owner,
+        groupCover: group.groupCover,
+        latestMessage: latestMessage
+      },
+      user: {
+        id: user.id,
+        username: user.username
+      }
     });
   }
 
