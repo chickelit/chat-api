@@ -28,6 +28,9 @@ export default class Conversation extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime;
 
+  @column.dateTime({ autoCreate: true })
+  public latestMessageAt: DateTime;
+
   @belongsTo(() => User, {
     foreignKey: "userIdOne"
   })

@@ -1,5 +1,6 @@
 import { DateTime } from "luxon";
 import {
+  afterCreate,
   BaseModel,
   BelongsTo,
   belongsTo,
@@ -52,4 +53,13 @@ export default class Message extends BaseModel {
     }
   })
   public media: HasOne<typeof File>;
+
+  @afterCreate()
+  public static async updateLatestMessageMoment(message: Message) {
+    await message.load("conversation");
+
+    await message.conversation
+      .merge({ latestMessageAt: message.updatedAt })
+      .save();
+  }
 }

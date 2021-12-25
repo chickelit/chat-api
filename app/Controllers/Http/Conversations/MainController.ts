@@ -8,68 +8,79 @@ export default class MainController {
   public async index({ request, response, auth }: HttpContextContract) {
     let { page, perPage } = request.qs();
 
-    page = page ? page : 1;
-
-    if (!perPage) {
+    if (!page || !perPage) {
       return response.badRequest();
     }
 
     const conversations = await Conversation.query()
       .where({ user_id_one: auth.user!.id })
       .orWhere({ user_id_two: auth.user!.id })
+      .orderBy("latest_message_at", "desc")
       .paginate(page, perPage);
 
-    const queries = conversations.toJSON().data.map(async (conversation) => {
-      await conversation.load("userOne", (query) => {
-        query.whereNot({ id: auth.user!.id });
-        query.preload("avatar");
+    const queries = conversations
+      .toJSON()
+      .data.map(async (conversation: Conversation) => {
+        await conversation.load("userOne", (query) => {
+          query.whereNot({ id: auth.user!.id });
+          query.preload("avatar");
+        });
+        await conversation.load("userTwo", (query) => {
+          query.whereNot({ id: auth.user!.id });
+          query.preload("avatar");
+        });
+
+        const latestMessage = await conversation
+          .related("messages")
+          .query()
+          .orderBy("created_at", "desc")
+          .first();
+
+        const friendship = [
+          await Database.query()
+            .from("friendships")
+            .where({
+              user_id: conversation.userIdOne,
+              friend_id: conversation.userIdTwo
+            })
+            .first(),
+          await Database.query()
+            .from("friendships")
+            .where({
+              user_id: conversation.userIdTwo,
+              friend_id: conversation.userIdOne
+            })
+            .first()
+        ].every((condition) => condition);
+
+        if (latestMessage) {
+          await latestMessage.load("owner", (owner) => {
+            owner.preload("avatar");
+          });
+        }
+
+        if (latestMessage && latestMessage.category === "media") {
+          await latestMessage.load("media");
+        }
+
+        conversation.$extras.friendship = !!friendship;
+        conversation.$extras.latestMessage = latestMessage;
+        conversation.$extras.user =
+          conversation.userOne || conversation.userTwo;
+
+        const conversationInJSON = conversation.toJSON();
+
+        delete conversationInJSON["userOne"];
+        delete conversationInJSON["userTwo"];
+
+        return conversationInJSON;
       });
-      await conversation.load("userTwo", (query) => {
-        query.whereNot({ id: auth.user!.id });
-        query.preload("avatar");
-      });
 
-      const latestMessage = await conversation
-        .related("messages")
-        .query()
-        .orderBy("created_at", "desc")
-        .first();
+    const conversationsInJSON = conversations.toJSON();
 
-      const friendship = [
-        await Database.query()
-          .from("friendships")
-          .where({
-            user_id: conversation.userIdOne,
-            friend_id: conversation.userIdTwo
-          })
-          .first(),
-        await Database.query()
-          .from("friendships")
-          .where({
-            user_id: conversation.userIdTwo,
-            friend_id: conversation.userIdOne
-          })
-          .first()
-      ].every((condition) => condition);
+    conversationsInJSON.data = await Promise.all(queries);
 
-      if (latestMessage) {
-        await latestMessage.load("owner");
-      }
-
-      if (latestMessage && latestMessage.category === "media") {
-        await latestMessage.load("media");
-      }
-
-      conversation.$extras.friendship = !!friendship;
-      conversation.$extras.latestMessage = latestMessage;
-      conversation.$extras.user = conversation.userOne || conversation.userTwo;
-
-      return conversation;
-    });
-
-    conversations.toJSON().data = await Promise.all(queries);
-
-    return conversations;
+    return conversationsInJSON;
   }
 
   public async store({ request, response, auth }: HttpContextContract) {
@@ -94,14 +105,7 @@ export default class MainController {
     ].every((condition) => condition);
 
     if (!friendship) {
-      return response.status(400).json({
-        errors: [
-          {
-            rule: "exists",
-            target: "friendship"
-          }
-        ]
-      });
+      return response.status(400);
     }
 
     if (existingConversation) {
@@ -124,6 +128,7 @@ export default class MainController {
     await conversation.load("userTwo", (user) => {
       user.preload("avatar");
     });
+
     await conversation.load("userOne", (user) => {
       user.preload("avatar");
     });
@@ -185,7 +190,7 @@ export default class MainController {
       await latestMessage.load("owner");
     }
 
-    if (latestMessage && latestMessage.category === "media") {
+    if (latestMessage?.category === "media") {
       await latestMessage.load("media");
     }
 

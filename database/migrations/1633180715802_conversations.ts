@@ -20,6 +20,7 @@ export default class Conversations extends BaseSchema {
         .inTable("users")
         .onDelete("CASCADE")
         .onUpdate("CASCADE");
+      table.timestamp("latest_message_at", { useTz: true });
       table.timestamp("created_at", { useTz: true });
       table.timestamp("updated_at", { useTz: true });
     });
