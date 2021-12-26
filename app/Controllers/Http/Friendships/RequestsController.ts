@@ -1,5 +1,6 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
+import { User } from "App/Models";
 import Ws from "App/Services/Ws";
 import { StoreValidator } from "App/Validators/FriendshipRequests";
 
@@ -7,9 +8,7 @@ export default class RequestsController {
   public async index({ request, response, auth }: HttpContextContract) {
     let { page, perPage } = request.qs();
 
-    page = page ? 1 : page;
-
-    if (!perPage) {
+    if (!page || !perPage) {
       return response.badRequest();
     }
 
@@ -27,36 +26,60 @@ export default class RequestsController {
 
   public async store({ request, response, auth }: HttpContextContract) {
     const { userId } = await request.validate(StoreValidator);
+    const newFriend = await User.findOrFail(userId);
     const user = auth.user!;
 
     if (user.id === userId) {
       return response.badRequest();
     }
 
-    const condition = [
+    const existingFriendshipRequest = [
       await Database.query()
-        .from("friendships")
-        .where({ user_id: user.id, friend_id: userId })
+        .from("friendship_requests")
+        .where({ user_id: user.id, friend_id: newFriend.id })
         .first(),
       await Database.query()
         .from("friendship_requests")
-        .where({ user_id: user.id, friend_id: userId })
-        .first(),
-      await Database.query()
-        .from("friendship_requests")
-        .where({ user_id: userId, friend_id: user.id })
+        .where({ user_id: newFriend.id, friend_id: user.id })
         .first()
     ].some((condition) => condition);
 
-    if (condition) {
-      return response.badRequest();
+    const existingFriendship = [
+      await Database.query()
+        .from("friendships")
+        .where({ user_id: user.id, friend_id: newFriend.id })
+        .first(),
+      await Database.query()
+        .from("friendships")
+        .where({ user_id: newFriend.id, friend_id: user.id })
+        .first()
+    ].every((condition) => condition);
+
+    if (existingFriendshipRequest) {
+      return response.status(400).json({
+        errors: [
+          {
+            rule: "unique",
+            target: "friendship-request"
+          }
+        ]
+      });
     }
 
-    await user.related("friendshipRequests").create({
-      friendId: userId
-    });
+    if (existingFriendship) {
+      return response.status(400).json({
+        errors: [
+          {
+            rule: "unique",
+            target: "friendship"
+          }
+        ]
+      });
+    }
 
-    Ws.io.to(`user-${userId}`).emit("newFriendshipRequest", {
+    newFriend.related("pendingFriendshipRequests").attach([user.id]);
+
+    Ws.io.to(`user-${newFriend.id}`).emit("newFriendshipRequest", {
       id: user.id,
       email: user.email,
       name: user.name,
