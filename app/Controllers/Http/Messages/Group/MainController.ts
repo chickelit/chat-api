@@ -6,9 +6,7 @@ export default class MainController {
   public async index({ request, response, params, auth }: HttpContextContract) {
     let { page, perPage } = request.qs();
 
-    page = page ? page : 1;
-
-    if (!perPage) {
+    if (!page || !perPage) {
       return response.badRequest();
     }
 

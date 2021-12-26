@@ -7,9 +7,7 @@ export default class MainController {
   public async index({ request, response, params, auth }: HttpContextContract) {
     let { page, perPage } = request.qs();
 
-    page = page ? page : 1;
-
-    if (!perPage) {
+    if (!page || !perPage) {
       return response.badRequest();
     }
 
@@ -44,27 +42,41 @@ export default class MainController {
 
   public async store({ request, response, auth }: HttpContextContract) {
     const { content, conversationId } = await request.validate(StoreValidator);
-    const user = auth.user!;
 
     const conversation = await Conversation.findOrFail(conversationId);
 
     if (
-      !(conversation.userIdOne === user.id) &&
-      !(conversation.userIdTwo === user.id)
+      ![conversation.userIdOne, conversation.userIdTwo].includes(auth.user!.id)
     ) {
       return response.badRequest();
     }
 
-    const friendship = await Database.query()
-      .from("friendships")
-      .where({
-        user_id: conversation.userIdOne,
-        friend_id: conversation.userIdTwo
-      })
-      .first();
+    const friendship = [
+      await Database.query()
+        .from("friendships")
+        .where({
+          user_id: conversation.userIdOne,
+          friend_id: conversation.userIdTwo
+        })
+        .first(),
+      await Database.query()
+        .from("friendships")
+        .where({
+          user_id: conversation.userIdTwo,
+          friend_id: conversation.userIdOne
+        })
+        .first()
+    ].every((condition) => condition);
 
     if (!friendship) {
-      return response.badRequest();
+      return response.status(400).json({
+        errors: [
+          {
+            rule: "exists",
+            target: "friendship"
+          }
+        ]
+      });
     }
 
     const message = await conversation

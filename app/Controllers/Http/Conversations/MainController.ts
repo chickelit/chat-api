@@ -105,7 +105,14 @@ export default class MainController {
     ].every((condition) => condition);
 
     if (!friendship) {
-      return response.status(400);
+      return response.status(400).json({
+        errors: [
+          {
+            rule: "exists",
+            target: "friendship"
+          }
+        ]
+      });
     }
 
     if (existingConversation) {
@@ -132,6 +139,8 @@ export default class MainController {
     await conversation.load("userOne", (user) => {
       user.preload("avatar");
     });
+
+    conversation.$extras.friendship = !!friendship;
 
     conversation.$extras.user =
       conversation.userIdOne === user.id
@@ -175,6 +184,23 @@ export default class MainController {
       return response.badRequest();
     }
 
+    const friendship = [
+      await Database.query()
+        .from("friendships")
+        .where({
+          user_id: conversation.userIdOne,
+          friend_id: conversation.userIdTwo
+        })
+        .first(),
+      await Database.query()
+        .from("friendships")
+        .where({
+          user_id: conversation.userIdTwo,
+          friend_id: conversation.userIdOne
+        })
+        .first()
+    ].every((condition) => condition);
+
     await conversation.load("userOne", (query) => {
       query.whereNot({ id: auth.user!.id });
       query.preload("avatar");
@@ -200,6 +226,7 @@ export default class MainController {
     }
 
     conversation.$extras.latestMessage = latestMessage;
+    conversation.$extras.friendship = !!friendship;
 
     const conversationInJSON = conversation.toJSON();
 

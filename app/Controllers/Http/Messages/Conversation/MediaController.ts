@@ -15,16 +15,32 @@ export default class MediaController {
       return response.badRequest();
     }
 
-    const friendship = await Database.query()
-      .from("friendships")
-      .where({
-        user_id: conversation.userIdOne,
-        friend_id: conversation.userIdTwo
-      })
-      .first();
+    const friendship = [
+      await Database.query()
+        .from("friendships")
+        .where({
+          user_id: conversation.userIdOne,
+          friend_id: conversation.userIdTwo
+        })
+        .first(),
+      await Database.query()
+        .from("friendships")
+        .where({
+          user_id: conversation.userIdTwo,
+          friend_id: conversation.userIdOne
+        })
+        .first()
+    ].every((condition) => condition);
 
     if (!friendship) {
-      return response.badRequest();
+      return response.status(400).json({
+        errors: [
+          {
+            rule: "exists",
+            target: "friendship"
+          }
+        ]
+      });
     }
 
     const message = await conversation
