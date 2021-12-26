@@ -1,6 +1,6 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
-import { User } from "App/Models";
+import { Conversation, User } from "App/Models";
 import Ws from "App/Services/Ws";
 import { StoreValidator } from "App/Validators/Friendships";
 
@@ -8,9 +8,7 @@ export default class MainController {
   public async index({ request, response, auth }: HttpContextContract) {
     let { page, perPage } = request.qs();
 
-    page = page ? page : 1;
-
-    if (!perPage) {
+    if (!page || !perPage) {
       return response.badRequest();
     }
 
@@ -23,6 +21,19 @@ export default class MainController {
       .paginate(page, perPage);
 
     const queries = friends.map(async (friend) => {
+      const existingConversation = await Conversation.query()
+        .where({
+          user_id_one: user.id,
+          user_id_two: friend.id
+        })
+        .orWhere({
+          user_id_one: friend.id,
+          user_id_two: user.id
+        })
+        .first();
+
+      friend.$extras.existingConversation = existingConversation;
+
       await friend.load("avatar");
 
       return friend;
@@ -59,6 +70,8 @@ export default class MainController {
     await friend.load("avatar");
     await user.load("avatar");
 
+    await user.related("pendingFriendshipRequests").detach([userId]);
+
     Ws.io.to(`user-${user.id}`).emit("newFriend", {
       id: friend.id,
       name: friend.name,
@@ -79,8 +92,6 @@ export default class MainController {
       username: user.username,
       avatar: user.avatar
     });
-
-    await user.related("pendingFriendshipRequests").detach([userId]);
 
     return friend;
   }
