@@ -14,6 +14,7 @@ export default class Groups extends BaseSchema {
         .onDelete("CASCADE")
         .onUpdate("CASCADE");
       table.string("title", 30).notNullable();
+      table.timestamp("latest_message_at", { useTz: true });
       table.timestamp("created_at", { useTz: true });
       table.timestamp("updated_at", { useTz: true });
     });

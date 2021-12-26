@@ -1,42 +1,44 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import { StoreValidator, UpdateValidator } from "App/Validators/Groups/Main";
-import { Group, Message } from "App/Models";
+import { Group } from "App/Models";
 
 export default class GroupsController {
   public async index({ request, response, auth }: HttpContextContract) {
     let { page, perPage } = request.qs();
 
-    page = page ? page : 1;
-
-    if (!perPage) {
+    if (!page || !perPage) {
       return response.badRequest();
     }
 
     const user = auth.user!;
 
-    const groups = await user.related("groups").query().paginate(page, perPage);
-
-    await user.load("groups", (group) => {
-      group.preload("groupCover");
-    });
+    const groups = await user
+      .related("groups")
+      .query()
+      .orderBy("latest_message_at", "desc")
+      .preload("groupCover")
+      .preload("owner", (owner) => {
+        owner.preload("avatar");
+      })
+      .paginate(page, perPage);
 
     const queries = groups.map(async (group) => {
-      await group.load("owner", (owner) => {
-        owner.preload("avatar");
-      });
-      await group.load("groupCover");
-
-      const latestMessage = await Message.query()
-        .where({ group_id: group.id })
+      const latestMessage = await group
+        .related("messages")
+        .query()
         .orderBy("created_at", "desc")
         .first();
 
-      if (latestMessage) {
-        await latestMessage.load("owner");
+      if (group.owner.id === user.id) {
+        group.$extras.isOwner = true;
       }
 
-      if (latestMessage && latestMessage.category === "media") {
-        await latestMessage.load("media");
+      if (latestMessage) {
+        await latestMessage.load("owner");
+
+        if (latestMessage.category === "media") {
+          await latestMessage.load("media");
+        }
       }
 
       group.$extras.latestMessage = latestMessage;
@@ -73,10 +75,15 @@ export default class GroupsController {
       owner.preload("avatar");
     });
 
-    const latestMessage = (await group
+    if (group.owner.id === user.id) {
+      group.$extras.isOwner = true;
+    }
+
+    const latestMessage = await group
       .related("messages")
       .query()
-      .orderBy("created_at", "desc")[0]) as Message;
+      .orderBy("created_at", "desc")
+      .first();
 
     if (latestMessage) {
       await latestMessage.load("owner");

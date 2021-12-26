@@ -8,7 +8,7 @@ import {
   HasOne,
   hasOne
 } from "@ioc:Adonis/Lucid/Orm";
-import { Conversation, User, File } from ".";
+import { Conversation, User, File, Group } from ".";
 import { MessageCategory } from "App/utils";
 
 export default class Message extends BaseModel {
@@ -47,6 +47,9 @@ export default class Message extends BaseModel {
   @belongsTo(() => Conversation)
   public conversation: BelongsTo<typeof Conversation>;
 
+  @belongsTo(() => Group)
+  public group: BelongsTo<typeof Group>;
+
   @hasOne(() => File, {
     onQuery: (query) => {
       query.where({ file_category: "media" });
@@ -56,10 +59,16 @@ export default class Message extends BaseModel {
 
   @afterCreate()
   public static async updateLatestMessageMoment(message: Message) {
-    await message.load("conversation");
+    if (message.conversationId) {
+      await message.load("conversation");
 
-    await message.conversation
-      .merge({ latestMessageAt: message.updatedAt })
-      .save();
+      await message.conversation
+        .merge({ latestMessageAt: message.updatedAt })
+        .save();
+    } else if (message.groupId) {
+      await message.load("group");
+
+      await message.group.merge({ latestMessageAt: message.updatedAt }).save();
+    }
   }
 }

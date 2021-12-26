@@ -57,10 +57,10 @@ export default class MainController {
           await latestMessage.load("owner", (owner) => {
             owner.preload("avatar");
           });
-        }
 
-        if (latestMessage && latestMessage.category === "media") {
-          await latestMessage.load("media");
+          if (latestMessage.category === "media") {
+            await latestMessage.load("media");
+          }
         }
 
         conversation.$extras.friendship = !!friendship;
@@ -158,7 +158,12 @@ export default class MainController {
 
     Ws.io.to(`user-${userTwo.id}`).emit("newConversation", useTwoConversation);
 
-    return conversation;
+    const conversationInJSON = conversation.toJSON();
+
+    delete conversationInJSON["userOne"];
+    delete conversationInJSON["userTwo"];
+
+    return conversationInJSON;
   }
 
   public async show({ response, params, auth }: HttpContextContract) {
@@ -188,10 +193,10 @@ export default class MainController {
 
     if (latestMessage) {
       await latestMessage.load("owner");
-    }
 
-    if (latestMessage?.category === "media") {
-      await latestMessage.load("media");
+      if (latestMessage.category === "media") {
+        await latestMessage.load("media");
+      }
     }
 
     conversation.$extras.latestMessage = latestMessage;

@@ -32,6 +32,9 @@ export default class Group extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime;
 
+  @column.dateTime({ autoCreate: true })
+  public latestMessageAt: DateTime;
+
   @manyToMany(() => User, {
     pivotTable: "group_members",
     pivotForeignKey: "group_id",
@@ -60,5 +63,10 @@ export default class Group extends BaseModel {
   @computed()
   public get latestMessage() {
     return this.$extras.latestMessage;
+  }
+
+  @computed()
+  public get isOwner() {
+    return this.$extras.isOwner;
   }
 }
