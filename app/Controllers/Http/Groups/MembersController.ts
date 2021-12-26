@@ -9,11 +9,7 @@ export default class MembersController {
     const { groupId, userId } = await request.validate(StoreValidator);
     const group = await Group.findOrFail(groupId);
 
-    if (userId === auth.user!.id) {
-      return response.badRequest();
-    }
-
-    if (group.userId !== auth.user!.id) {
+    if (userId === auth.user!.id || group.userId !== auth.user!.id) {
       return response.badRequest();
     }
 
@@ -29,7 +25,14 @@ export default class MembersController {
     ].every((condition) => condition);
 
     if (!friendship) {
-      return response.badRequest();
+      return response.status(400).json({
+        errors: [
+          {
+            rule: "exists",
+            target: "friendship"
+          }
+        ]
+      });
     }
 
     await group.load("members");
@@ -37,24 +40,20 @@ export default class MembersController {
     const alreadyMember = group.members.some((member) => member.id === userId);
 
     if (alreadyMember) {
-      return response.badRequest();
+      return response.json({
+        errors: [
+          {
+            rule: "unique",
+            target: "membership"
+          }
+        ]
+      });
     }
 
     await group.related("members").attach([userId]);
 
     const member = await User.findOrFail(userId);
     await member.load("avatar");
-
-    Ws.io.to(`group-${groupId}`).emit("newMember", {
-      groupId,
-      user: {
-        groupId,
-        id: member.id,
-        name: member.name,
-        username: member.username,
-        avatar: member.avatar
-      }
-    });
 
     await group.load("owner", (owner) => {
       owner.preload("avatar");
@@ -69,6 +68,17 @@ export default class MembersController {
       .first();
 
     const user = auth.user!;
+
+    Ws.io.to(`group-${groupId}`).emit("newMember", {
+      groupId,
+      user: {
+        groupId,
+        id: member.id,
+        name: member.name,
+        username: member.username,
+        avatar: member.avatar
+      }
+    });
 
     Ws.io.to(`user-${userId}`).emit("newGroup", {
       group: {
@@ -90,9 +100,7 @@ export default class MembersController {
   public async index({ request, response, params, auth }: HttpContextContract) {
     let { page, perPage } = request.qs();
 
-    page = page ? page : 1;
-
-    if (!perPage) {
+    if (!page || !perPage) {
       return response.badRequest();
     }
 
