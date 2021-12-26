@@ -40,7 +40,7 @@ export default class MembersController {
     const alreadyMember = group.members.some((member) => member.id === userId);
 
     if (alreadyMember) {
-      return response.json({
+      return response.status(400).json({
         errors: [
           {
             rule: "unique",
