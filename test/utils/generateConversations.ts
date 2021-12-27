@@ -11,7 +11,7 @@ export default async ({ user, token, amount }: Payload) => {
   const queries = Array(amount)
     .fill(false)
     .map(async () => {
-      const friend = await generateFriend(user, token);
+      const { friend } = await generateFriend(user, token);
 
       const conversation = await Conversation.create({
         userIdOne: user.id,
@@ -30,5 +30,5 @@ export default async ({ user, token, amount }: Payload) => {
 
   const conversations = await Promise.all(queries);
 
-  return amount > 1 ? conversations : conversations[0];
+  return conversations as Conversation[];
 };

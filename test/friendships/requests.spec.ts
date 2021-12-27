@@ -1,7 +1,12 @@
 import Database from "@ioc:Adonis/Lucid/Database";
-import { User } from "App/Models";
 import test from "japa";
-import { generateToken, request, sendFriendshipRequests } from "../utils";
+import { FriendshipRequest, User } from "App/Models";
+import { UserFactory } from "Database/factories/UserFactory";
+import {
+  generatePendingFriendshipRequests,
+  generateToken,
+  request
+} from "../utils";
 
 test.group("/friendships/requests", async (group) => {
   group.beforeEach(async () => {
@@ -13,8 +18,8 @@ test.group("/friendships/requests", async (group) => {
   });
 
   test("[store] - should be able to send a friendship request", async (assert) => {
-    const { user: friend } = await generateToken();
     const { user, token } = await generateToken();
+    const friend = await UserFactory.create();
 
     await request
       .post("/friendships/requests")
@@ -22,17 +27,19 @@ test.group("/friendships/requests", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: user.id, friend_id: friend.id })
-      .first();
+    const friendshipRequest = await FriendshipRequest.query()
+      .where({
+        userId: user.id,
+        friendId: friend.id
+      })
+      .firstOrFail();
 
     assert.exists(friendshipRequest);
-    assert.equal(friendshipRequest.user_id, user.id);
-    assert.equal(friendshipRequest.friend_id, friend.id);
+    assert.equal(friendshipRequest.userId, user.id);
+    assert.equal(friendshipRequest.friendId, friend.id);
   });
 
-  test("[store] - should fail when trying to send a friendship request to the authenticated user", async (assert) => {
+  test("[store] - should fail when trying to send a friendship request to yourself", async (assert) => {
     const { user, token } = await generateToken();
 
     await request
@@ -41,57 +48,69 @@ test.group("/friendships/requests", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(400);
 
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: user.id, friend_id: user.id })
+    const friendshipRequest = await FriendshipRequest.query()
+      .where({
+        userId: user.id,
+        friendId: user.id
+      })
       .first();
 
     assert.isNull(friendshipRequest);
   });
 
   test("[store] - should fail when trying to send a friendship request and it already exists", async () => {
-    const { user: friend } = await generateToken();
-    const { token } = await generateToken();
+    const { user, token } = await generateToken();
+
+    const friendshipRequests = (await generatePendingFriendshipRequests({
+      user,
+      amount: 1
+    })) as {
+      user: User;
+      friendshipRequest: FriendshipRequest;
+    }[];
+
+    const friendshipRequest = friendshipRequests[0];
 
     await request
       .post("/friendships/requests")
-      .send({ userId: friend.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    await request
-      .post("/friendships/requests")
-      .send({ userId: friend.id })
+      .send({ userId: friendshipRequest.user.id })
       .set("authorization", `bearer ${token}`)
       .expect(400);
   });
 
   test("[store] - should fail when trying to send a friendship request and the other user already sent one", async (assert) => {
-    const { user: friend, token: friendToken } = await generateToken();
     const { user, token } = await generateToken();
 
-    await request
-      .post("/friendships/requests")
-      .send({ userId: friend.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    const friendshipRequests = (await generatePendingFriendshipRequests({
+      user,
+      amount: 1
+    })) as {
+      user: User;
+      friendshipRequest: FriendshipRequest;
+    }[];
+
+    const friendshipRequest = friendshipRequests[0];
 
     await request
       .post("/friendships/requests")
-      .send({ userId: user.id })
-      .set("authorization", `bearer ${friendToken}`)
+      .send({ userId: friendshipRequest.user.id })
+      .set("authorization", `bearer ${token}`)
       .expect(400);
 
-    const friendshipRequestOne = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: user.id, friend_id: friend.id })
+    const friendshipRequestOne = await FriendshipRequest.query()
+      .where({
+        userId: friendshipRequest.user.id,
+        friendId: user.id
+      })
       .first();
 
     assert.exists(friendshipRequestOne);
 
-    const friendshipRequestTwo = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: friend.id, friend_id: user.id })
+    const friendshipRequestTwo = await FriendshipRequest.query()
+      .where({
+        userId: user.id,
+        friendId: friendshipRequest.user.id
+      })
       .first();
 
     assert.isNull(friendshipRequestTwo);
@@ -99,118 +118,58 @@ test.group("/friendships/requests", async (group) => {
 
   test("[index] - should be able to list authenticated user pending friendship requests", async (assert) => {
     const { user, token } = await generateToken();
-    const array = Array(10).fill(false);
-    const queries = array.map(async () => {
-      return await generateToken();
-    });
-    const users = await Promise.all(queries);
 
-    await sendFriendshipRequests(
-      user.id,
-      users.map((user) => user.token)
-    );
+    const friendshipRequests = await generatePendingFriendshipRequests({
+      user,
+      amount: 30
+    });
 
     const { body } = await request
-      .get("/friendships/requests?page=1&perPage=20")
+      .get("/friendships/requests?page=1&perPage=100")
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
     assert.exists(body.meta);
     assert.exists(body.data);
-    assert.equal(body.meta.total, users.length);
+    assert.equal(body.meta.total, friendshipRequests.length);
 
-    users.forEach(({ user }) => {
+    console.table(body.data);
+
+    friendshipRequests.forEach(({ user }) => {
       const isValid = body.data.some((friendshipRequestUser: User) => {
         return user.id === friendshipRequestUser.id;
       });
 
+      assert.isUndefined(user.avatar);
       assert.isTrue(isValid);
     });
   });
 
-  test("[index] - should show extra data correctly", async (assert) => {
+  test("[destroy] - should be able to refuse a friendship request", async () => {
     const { user, token } = await generateToken();
-    const array = Array(10).fill(false);
-    const queries = array.map(async () => {
-      return await generateToken();
-    });
-    const users = await Promise.all(queries);
 
-    await sendFriendshipRequests(
-      user.id,
-      users.map((user) => user.token)
-    );
+    const friendshipRequests = (await generatePendingFriendshipRequests({
+      user,
+      amount: 1
+    })) as {
+      user: User;
+      friendshipRequest: FriendshipRequest;
+    }[];
 
-    const { body } = await request
-      .get("/friendships/requests?page=1&perPage=20")
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    assert.exists(body.meta);
-    assert.exists(body.data);
-    assert.equal(body.meta.total, users.length);
-
-    users.forEach(({ user }) => {
-      const isValid = body.data.some((friendshipRequestUser: User) => {
-        return user.id === friendshipRequestUser.id;
-      });
-
-      assert.isTrue(isValid);
-    });
-  });
-
-  test("[destroy] - should be able to refuse a friendship request", async (assert) => {
-    const { user, token } = await generateToken();
-    const userWithToken = await generateToken();
-
-    await sendFriendshipRequests(user.id, [userWithToken.token]);
+    const friendshipRequest = friendshipRequests[0];
 
     await request
-      .delete(`/friendships/requests/${userWithToken.user.id}`)
+      .delete(`/friendships/requests/${friendshipRequest.user.id}`)
       .set("authorization", `bearer ${token}`)
       .expect(200);
-
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: userWithToken.user.id, friend_id: user.id })
-      .first();
-
-    assert.isNull(friendshipRequest);
   });
 
-  test("[destroy] - should not be able to refuse a friendship request from yourself", async (assert) => {
-    const { user, token } = await generateToken();
+  test("[destroy] - should not be able to refuse a friendship request that does not exist", async () => {
+    const { token } = await generateToken();
+    const { user } = await generateToken();
 
     await request
       .delete(`/friendships/requests/${user.id}`)
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
-
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: user.id, friend_id: user.id })
-      .first();
-
-    assert.isNull(friendshipRequest);
-  });
-
-  test("[destroy] - should not be able to refuse a friendship request that does not exist", async (assert) => {
-    const { user, token } = await generateToken();
-    const { user: temporaryUser, token: temporaryToken } =
-      await generateToken();
-
-    await sendFriendshipRequests(user.id, [temporaryToken]);
-    await temporaryUser.delete();
-
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: temporaryUser.id, friend_id: user.id })
-      .first();
-
-    assert.isNull(friendshipRequest);
-
-    await request
-      .delete(`/friendships/requests/${temporaryUser.id}`)
       .set("authorization", `bearer ${token}`)
       .expect(400);
   });

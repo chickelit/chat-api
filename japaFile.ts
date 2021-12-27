@@ -26,7 +26,7 @@ async function startHttpServer() {
 }
 
 configure({
-  files: ["test/**/conversations.spec.ts"],
+  files: ["test/friendships/*.spec.ts"],
   before: [runMigrations, startHttpServer],
   after: [rollbackMigrations]
 });

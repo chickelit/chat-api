@@ -1,12 +1,12 @@
 import Database from "@ioc:Adonis/Lucid/Database";
-import { User } from "App/Models";
+import { Friendship, FriendshipRequest, User } from "App/Models";
 import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
 import {
   addFriends,
   request,
-  sendFriendshipRequests,
-  generateToken
+  generateToken,
+  generatePendingFriendshipRequests
 } from "Test/utils";
 
 test.group("/friendships", async (group) => {
@@ -19,39 +19,49 @@ test.group("/friendships", async (group) => {
   });
 
   test("[store] - should be able to accept a friendship request", async (assert) => {
-    const { user: friend, token: friendToken } = await generateToken();
-    const { user, token } = await generateToken();
+    const { user: me, token } = await generateToken();
 
-    await sendFriendshipRequests(user.id, [friendToken]);
+    const friendshipRequests = (await generatePendingFriendshipRequests({
+      user: me,
+      amount: 1
+    })) as {
+      user: User;
+      friendshipRequest: FriendshipRequest;
+    }[];
+
+    const { user, friendshipRequest } = friendshipRequests[0];
 
     await request
       .post("/friendships")
-      .send({ userId: friend.id })
+      .send({ userId: user.id })
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
     const friendship = [
-      await Database.query()
-        .from("friendships")
+      await Friendship.query()
         .where({
-          user_id: user.id,
-          friend_id: friend.id
+          userId: friendshipRequest.userId,
+          friendId: friendshipRequest.friendId
         })
         .first(),
-      await Database.query()
-        .from("friendships")
-        .where({ user_id: friend.id, friend_id: user.id })
+      await Friendship.query()
+        .where({
+          userId: friendshipRequest.friendId,
+          friendId: friendshipRequest.userId
+        })
         .first()
-    ].every((condition: any) => !!condition);
+    ].every((condition) => condition);
 
     assert.isTrue(friendship);
 
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: friend.id, friend_id: user.id })
+    const findFriendshipRequest = await FriendshipRequest.query()
+      .where({
+        userId: friendshipRequest.userId,
+        friendId: friendshipRequest.friendId
+      })
       .first();
 
-    assert.isNull(friendshipRequest);
+    assert.isNull(findFriendshipRequest);
   });
 
   test("[store] - should fail when trying to accept a friendship request that does not exist", async (assert) => {

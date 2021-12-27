@@ -17,10 +17,12 @@ export default async (user: User, token: string) => {
     .expect(200);
 
   return {
-    id: friend.id,
-    email: friend.email,
-    name: friend.name,
-    username: friend.username,
-    token: friendToken
+    friend: {
+      id: friend.id,
+      email: friend.email,
+      name: friend.name,
+      username: friend.username
+    },
+    friendToken
   };
 };

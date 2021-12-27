@@ -11,3 +11,15 @@ export { default as sendMessages } from "./sendMessages";
 /* new */
 export { default as generateFriend } from "./generateFriend";
 export { default as generateConversations } from "./generateConversations";
+export { default as generatePendingFriendshipRequests } from "./generatePendingFriendshipRequests";
+export { default as generateFriendshipRequests } from "./generatePendingFriendshipRequests";
+
+/* in use for now */
+/*
+request
+generateToken
+generateFriends
+generateConversations
+generatePendingFriendshipRequests
+generateFriendshipRequests
+*/

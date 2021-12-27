@@ -21,7 +21,7 @@ test.group("/conversations", async (group) => {
   test("[store] - should be able to create a conversation", async (assert) => {
     const { user, token } = await generateToken();
 
-    const friend = await generateFriend(user, token);
+    const { friend } = await generateFriend(user, token);
 
     await request
       .post("/conversations")
@@ -29,10 +29,9 @@ test.group("/conversations", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
-    const conversation = await Database.query()
-      .from("conversations")
-      .where({ user_id_one: user.id, user_id_two: friend.id })
-      .orWhere({ user_id_one: friend.id, user_id_two: user.id })
+    const conversation = await Conversation.query()
+      .where({ userIdOne: user.id, userIdTwo: friend.id })
+      .orWhere({ userIdOne: friend.id, userIdTwo: user.id })
       .first();
 
     assert.exists(conversation);
@@ -48,10 +47,9 @@ test.group("/conversations", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(400);
 
-    const conversation = await Database.query()
-      .from("conversations")
-      .where({ user_id_one: user.id, user_id_two: otherUser.id })
-      .orWhere({ user_id_one: otherUser.id, user_id_two: user.id })
+    const conversation = await Conversation.query()
+      .where({ userIdOne: user.id, userIdTwo: otherUser.id })
+      .orWhere({ userIdOne: otherUser.id, userIdTwo: user.id })
       .first();
 
     assert.isNull(conversation);
@@ -60,11 +58,13 @@ test.group("/conversations", async (group) => {
   test("[store] - should fail when trying to create a conversation and it already exists", async (assert) => {
     const { user, token } = await generateToken();
 
-    const conversation = (await generateConversations({
-      user,
-      token,
-      amount: 1
-    })) as Conversation;
+    const conversation = (
+      await generateConversations({
+        user,
+        token,
+        amount: 1
+      })
+    )[0] as Conversation;
 
     const friendId =
       conversation.userIdOne === user.id
@@ -79,10 +79,9 @@ test.group("/conversations", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(400);
 
-    const conversations = await Database.query()
-      .from("conversations")
-      .where({ user_id_one: user.id, user_id_two: friendId })
-      .orWhere({ user_id_one: friendId, user_id_two: user.id });
+    const conversations = await Conversation.query()
+      .where({ userIdOne: user.id, userIdTwo: friendId })
+      .orWhere({ userIdOne: friendId, userIdTwo: user.id });
 
     assert.equal(conversations.length, 1);
   });
@@ -121,11 +120,13 @@ test.group("/conversations", async (group) => {
   test("[show] - should be able to show a conversation", async (assert) => {
     const { user, token } = await generateToken();
 
-    const conversation = (await generateConversations({
-      user,
-      token,
-      amount: 1
-    })) as Conversation;
+    const conversation = (
+      await generateConversations({
+        user,
+        token,
+        amount: 1
+      })
+    )[0] as Conversation;
 
     const { body } = await request
       .get(`/conversations/${conversation.id}`)
