@@ -1,13 +1,13 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import test from "japa";
 import {
-  addFriends,
-  createConversations,
   request,
-  sendMessages
+  generateFriend,
+  generateToken,
+  generateConversations
 } from "Test/utils";
 import { UserFactory } from "Database/factories/UserFactory";
-import { generateToken } from "./utils";
+import { Conversation } from "App/Models";
 
 test.group("/conversations", async (group) => {
   group.beforeEach(async () => {
@@ -20,20 +20,19 @@ test.group("/conversations", async (group) => {
 
   test("[store] - should be able to create a conversation", async (assert) => {
     const { user, token } = await generateToken();
-    const friendWithToken = await generateToken();
 
-    await addFriends({ user, token }, [friendWithToken]);
+    const friend = await generateFriend(user, token);
 
     await request
       .post("/conversations")
-      .send({ userId: friendWithToken.user.id })
+      .send({ userId: friend.id })
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
     const conversation = await Database.query()
       .from("conversations")
-      .where({ user_id_one: user.id, user_id_two: friendWithToken.user.id })
-      .orWhere({ user_id_one: friendWithToken.user.id, user_id_two: user.id })
+      .where({ user_id_one: user.id, user_id_two: friend.id })
+      .orWhere({ user_id_one: friend.id, user_id_two: user.id })
       .first();
 
     assert.exists(conversation);
@@ -60,118 +59,73 @@ test.group("/conversations", async (group) => {
 
   test("[store] - should fail when trying to create a conversation and it already exists", async (assert) => {
     const { user, token } = await generateToken();
-    const friendWithToken = await generateToken();
 
-    await addFriends({ user, token }, [friendWithToken]);
+    const conversation = (await generateConversations({
+      user,
+      token,
+      amount: 1
+    })) as Conversation;
+
+    const friendId =
+      conversation.userIdOne === user.id
+        ? conversation.userIdTwo
+        : conversation.userIdOne;
+
+    assert.exists(conversation);
 
     await request
       .post("/conversations")
-      .send({ userId: friendWithToken.user.id })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    await request
-      .post("/conversations")
-      .send({ userId: friendWithToken.user.id })
+      .send({ userId: friendId })
       .set("authorization", `bearer ${token}`)
       .expect(400);
 
-    const conversation = await Database.query()
+    const conversations = await Database.query()
       .from("conversations")
-      .where({ user_id_one: user.id, user_id_two: friendWithToken.user.id })
-      .orWhere({ user_id_one: friendWithToken.user.id, user_id_two: user.id })
-      .first();
+      .where({ user_id_one: user.id, user_id_two: friendId })
+      .orWhere({ user_id_one: friendId, user_id_two: user.id });
 
-    assert.exists(conversation);
+    assert.equal(conversations.length, 1);
   });
 
   test("[index] - should list authenticated user's conversation list correctly", async (assert) => {
     const { user, token } = await generateToken();
-    const array = Array(10).fill(false);
-    const queries = array.map(async () => {
-      return await generateToken();
-    });
-    const friends = await Promise.all(queries);
 
-    await addFriends({ user, token }, friends);
-    await createConversations(
+    const conversations = (await generateConversations({
+      user,
       token,
-      friends.map((friendWithToken) => friendWithToken.user)
-    );
+      amount: 30
+    })) as Conversation[];
 
     const { body } = await request
-      .get("/conversations?page=1&perPage=20")
+      .get("/conversations?page=1&perPage=100")
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
     assert.exists(body.meta);
     assert.exists(body.data);
-    assert.equal(body.meta.total, friends.length);
-    assert.equal(body.data.length, friends.length);
-  });
+    assert.equal(body.meta.total, conversations.length);
+    assert.equal(body.data.length, conversations.length);
 
-  test("[index] - should show extra data correctly", async (assert) => {
-    const { user, token } = await generateToken();
-    const array = Array(10).fill(false);
-    const queries = array.map(async () => {
-      return await generateToken();
+    body.data.forEach((conversation: Conversation) => {
+      assert.exists(conversation.id);
+      assert.exists(conversation.userIdOne);
+      assert.exists(conversation.userIdTwo);
+      assert.exists(conversation.createdAt);
+      assert.exists(conversation.updatedAt);
+      assert.exists(conversation.friendship);
+      assert.exists(conversation.user);
+      assert.equal(conversation.friendship, true);
     });
-    const friends = await Promise.all(queries);
-
-    await addFriends({ user, token }, friends);
-    const conversations = await createConversations(
-      token,
-      friends.map((friendWithToken) => friendWithToken.user)
-    );
-    await Promise.all(
-      conversations.map(async (conversation) => {
-        await sendMessages(token, 10, conversation.id);
-      })
-    );
-
-    const { body } = await request
-      .get("/conversations?page=1&perPage=20")
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    assert.exists(body.meta);
-    assert.exists(body.data);
-    assert.equal(body.meta.total, friends.length);
-    assert.equal(body.data.length, friends.length);
-
-    await Promise.all(
-      body.data.map(async (conversation) => {
-        const latestMessage = await Database.query()
-          .from("messages")
-          .where({ conversation_id: conversation.id })
-          .orderBy("created_at", "desc")
-          .first();
-
-        assert.equal(conversation.latestMessage.id, latestMessage.id);
-        assert.equal(conversation.latestMessage.userId, latestMessage.user_id);
-        assert.equal(
-          conversation.latestMessage.conversationId,
-          latestMessage.conversation_id
-        );
-        assert.equal(conversation.latestMessage.content, latestMessage.content);
-      })
-    );
-
-    body.data.forEach((conversation) => assert.isTrue(conversation.friendship));
   });
 
   test("[show] - should be able to show a conversation", async (assert) => {
     const { user, token } = await generateToken();
-    const friendWithToken = await generateToken();
 
-    await addFriends({ user, token }, [friendWithToken]);
-    await createConversations(token, [friendWithToken.user]);
-
-    const conversation = await Database.query()
-      .from("conversations")
-      .where({ user_id_one: user.id, user_id_two: friendWithToken.user.id })
-      .orWhere({ user_id_one: friendWithToken.user.id, user_id_two: user.id })
-      .first();
+    const conversation = (await generateConversations({
+      user,
+      token,
+      amount: 1
+    })) as Conversation;
 
     const { body } = await request
       .get(`/conversations/${conversation.id}`)
@@ -181,6 +135,10 @@ test.group("/conversations", async (group) => {
     assert.exists(body.id);
     assert.exists(body.userIdOne);
     assert.exists(body.userIdTwo);
+    assert.exists(body.createdAt);
+    assert.exists(body.updatedAt);
+    assert.exists(body.friendship);
     assert.exists(body.user);
+    assert.equal(body.friendship, true);
   });
 });
