@@ -1,7 +1,7 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
-import { addFriends, generateToken, request } from "Test/utils";
+import { generateToken, request } from "Test/utils";
 
 test.group("/users/search", async (group) => {
   group.beforeEach(async () => {
@@ -29,31 +29,5 @@ test.group("/users/search", async (group) => {
     assert.deepEqual(body.email, user.email);
     assert.deepEqual(body.name, user.name);
     assert.deepEqual(body.username, user.username);
-  });
-
-  test("[show] - should show extra data correctly", async (assert) => {
-    const queryUserWithToken = await generateToken();
-    const { user, token } = await generateToken();
-
-    /* --- */
-    await addFriends(queryUserWithToken, [{ user, token }]);
-
-    const { body } = await request
-      .get(`/users/search?username=${queryUserWithToken.user.username}`)
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    assert.exists(body.id);
-    assert.exists(body.email);
-    assert.exists(body.name);
-    assert.exists(body.username);
-    assert.deepEqual(body.id, queryUserWithToken.user.id);
-    assert.deepEqual(body.email, queryUserWithToken.user.email);
-    assert.deepEqual(body.name, queryUserWithToken.user.name);
-    assert.deepEqual(body.username, queryUserWithToken.user.username);
-    assert.exists(body.friendship);
-
-    /* --- */
-    assert.isTrue(body.friendship);
   });
 });

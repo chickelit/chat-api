@@ -143,10 +143,18 @@ export default class MembersController {
       }
 
       await group.related("members").detach([+userId]);
+
+      return response.ok(200);
     }
 
     if (+userId === auth.user!.id) {
       await group.related("members").detach([+userId]);
+
+      return response.ok(200);
+    }
+
+    if (auth.user!.id !== userId && auth.user!.id !== group.userId) {
+      return response.badRequest();
     }
 
     Ws.io.to(`group-${groupId}`).emit("deleteMember", { memberId: +userId });

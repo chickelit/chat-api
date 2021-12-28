@@ -1,7 +1,12 @@
 import { User } from "App/Models";
 import { generateToken, request } from ".";
 
-export default async (user: User, token: string) => {
+interface Payload {
+  user: User;
+  token: string;
+}
+
+export default async ({ user, token }: Payload) => {
   const { user: friend, token: friendToken } = await generateToken();
 
   await request

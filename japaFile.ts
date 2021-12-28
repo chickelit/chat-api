@@ -26,7 +26,7 @@ async function startHttpServer() {
 }
 
 configure({
-  files: ["test/**/*.spec.ts"],
+  files: ["test/groups/*.spec.ts"],
   before: [runMigrations, startHttpServer],
   after: [rollbackMigrations]
 });

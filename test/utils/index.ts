@@ -7,7 +7,10 @@ export { default as generateConversations } from "./generateConversations";
 export { default as generatePendingFriendshipRequests } from "./generatePendingFriendshipRequests";
 export { default as generateFriendshipRequests } from "./generatePendingFriendshipRequests";
 export { default as forgotPassword } from "./forgotPassword";
+export { default as register } from "./register";
 export { default as generateGroups } from "./generateGroups";
+export { default as generateMembers } from "./generateMembers";
+export { default as authenticate } from "./authenticate";
 
 /* not in use */
 export { default as beginRegister } from "./beginRegister";
@@ -17,7 +20,6 @@ export { default as addFriends } from "./addFriends";
 export { default as createConversations } from "./createConversations";
 export { default as addMembers } from "./addMembers";
 export { default as sendMessages } from "./sendMessages";
-export { default as register } from "./register";
 
 /* in use for now */
 /*
@@ -28,5 +30,8 @@ generateConversations
 generatePendingFriendshipRequests
 generateFriendshipRequests
 forgotPassword
+register
 generateGroups
+generateMembers
+authenticate
 */
