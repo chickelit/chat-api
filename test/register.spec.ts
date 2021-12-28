@@ -1,6 +1,6 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import test from "japa";
-import { generateToken, request, beginRegister } from "Test/utils";
+import { generateToken, request, register } from "Test/utils";
 import faker from "faker";
 import Mail from "@ioc:Adonis/Addons/Mail";
 import { User, UserKey } from "App/Models";
@@ -16,6 +16,7 @@ test.group("/register", async (group) => {
 
   test("[store] - should be able to send an email when email is not in use", async (assert) => {
     const email = faker.internet.email();
+
     Mail.trap((message) => {
       assert.deepEqual(message.to, [{ address: email }]);
       assert.deepEqual(message.from, {
@@ -36,10 +37,7 @@ test.group("/register", async (group) => {
     Mail.restore();
 
     const user = await User.findByOrFail("email", email);
-    const key = await Database.query()
-      .from("user_keys")
-      .where({ user_id: user.id })
-      .first();
+    const key = await UserKey.findByOrFail("userId", user.id);
 
     assert.exists(key);
   });
@@ -55,25 +53,26 @@ test.group("/register", async (group) => {
       })
       .expect(422);
 
-    const key = await Database.query()
-      .from("user_keys")
-      .where({ user_id: user.id })
-      .first();
+    const key = await UserKey.findBy("userId", user.id);
 
     assert.notExists(key);
   });
 
   test("[show] - should be able to show user data through the generated key", async (assert) => {
-    const { user, key } = await beginRegister(assert);
+    const { email, key } = await register({ assert });
 
     const { body } = await request.get(`/register/${key}`).expect(200);
 
+    const user = await User.query().where({ email }).firstOrFail();
+
     assert.deepEqual(user.id, body.id);
     assert.deepEqual(user.email, body.email);
+    assert.deepEqual(user.name, body.username);
+    assert.deepEqual(user.username, body.username);
   });
 
   test("[update] - should be able to finish register", async (assert) => {
-    const { key } = await beginRegister(assert);
+    const { key } = await register({ assert });
     const { body } = await request
       .put("/register")
       .send({
@@ -92,6 +91,6 @@ test.group("/register", async (group) => {
 
     const findKey = await UserKey.findBy("key", key);
 
-    assert.isNull(findKey);
+    assert.notExists(findKey);
   });
 });

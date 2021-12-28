@@ -2,7 +2,7 @@ import Database from "@ioc:Adonis/Lucid/Database";
 import test from "japa";
 import faker from "faker";
 import Mail from "@ioc:Adonis/Addons/Mail";
-import { beginPasswordRecovery, request } from "./utils";
+import { forgotPassword, request } from "./utils";
 import { UserFactory } from "Database/factories/UserFactory";
 import { UserKey } from "App/Models";
 
@@ -15,7 +15,7 @@ test.group("/forgot-password", async (group) => {
     await Database.rollbackGlobalTransaction();
   });
 
-  test("[store] - should be able to send an email when email is in use", async (assert) => {
+  test("[store] - should be able to send an email when it exists", async (assert) => {
     const user = await UserFactory.create();
 
     Mail.trap((message) => {
@@ -37,10 +37,9 @@ test.group("/forgot-password", async (group) => {
 
     Mail.restore();
 
-    const key = await Database.query()
-      .from("user_keys")
-      .where({ user_id: user.id })
-      .first();
+    const key = await UserKey.query().where({
+      userId: user.id
+    });
 
     assert.exists(key);
   });
@@ -56,7 +55,8 @@ test.group("/forgot-password", async (group) => {
   });
 
   test("[show] - should be able to show user data through the generated key", async (assert) => {
-    const { user, key } = await beginPasswordRecovery(assert);
+    const user = await UserFactory.create();
+    const { key } = await forgotPassword({ assert, user });
 
     const { body } = await request.get(`/forgot-password/${key}`).expect(200);
 
@@ -71,8 +71,11 @@ test.group("/forgot-password", async (group) => {
   });
 
   test("[update] - should be able to finish password recovery", async (assert) => {
-    const { user, key } = await beginPasswordRecovery(assert);
     const newPassword = "newSecret";
+    const oldPassword = "oldSecret";
+
+    const user = await UserFactory.merge({ password: oldPassword }).create();
+    const { key } = await forgotPassword({ assert, user });
 
     await request
       .put("/forgot-password")
@@ -81,7 +84,7 @@ test.group("/forgot-password", async (group) => {
 
     await request
       .post("/auth")
-      .send({ email: user.email, password: "secret" })
+      .send({ email: user.email, password: oldPassword })
       .expect(400);
 
     await request
@@ -91,22 +94,32 @@ test.group("/forgot-password", async (group) => {
 
     const findKey = await UserKey.findBy("key", key);
 
-    assert.isNull(findKey);
+    assert.notExists(findKey);
   });
 
   test("[update] - should fail when passwordConfirmation is left", async (assert) => {
-    const { key } = await beginPasswordRecovery(assert);
     const newPassword = "newSecret";
+    const oldPassword = "oldSecret";
+
+    const user = await UserFactory.merge({ password: oldPassword }).create();
+    const { key } = await forgotPassword({ assert, user });
 
     await request
       .put("/forgot-password")
       .send({ key, password: newPassword })
       .expect(422);
+
+    const findKey = await UserKey.findBy("key", key);
+
+    assert.exists(findKey);
   });
 
   test("[update] - should fail when passwordConfirmation is invalid", async (assert) => {
-    const { key } = await beginPasswordRecovery(assert);
     const newPassword = "newSecret";
+    const oldPassword = "oldSecret";
+
+    const user = await UserFactory.merge({ password: oldPassword }).create();
+    const { key } = await forgotPassword({ assert, user });
 
     await request
       .put("/forgot-password")
@@ -116,5 +129,9 @@ test.group("/forgot-password", async (group) => {
         passwordConfirmation: faker.internet.password()
       })
       .expect(422);
+
+    const findKey = await UserKey.findBy("key", key);
+
+    assert.exists(findKey);
   });
 });

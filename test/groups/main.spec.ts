@@ -1,9 +1,10 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import test from "japa";
-import { generateToken, request, sendMessages } from "../utils";
+import { generateGroups, generateToken, request } from "../utils";
 import faker from "faker";
 import { GroupFactory } from "Database/factories/GroupFactory";
 import { UserFactory } from "Database/factories/UserFactory";
+import { Group } from "App/Models";
 
 test.group("/groups", async (group) => {
   group.beforeEach(async () => {
@@ -20,17 +21,14 @@ test.group("/groups", async (group) => {
     const { body } = await request
       .post("/groups")
       .send({
-        title: faker.lorem.words(3)
+        title: faker.lorem.words(2)
       })
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
-    const group = await Database.query()
-      .from("groups")
-      .where({ id: body.id })
-      .first();
+    const group = await Group.findOrFail(body.id);
 
-    assert.deepEqual(user.id, group.user_id);
+    assert.deepEqual(user.id, group.userId);
     assert.deepEqual(body.title, group.title);
 
     const isMember = await Database.query()
@@ -53,17 +51,14 @@ test.group("/groups", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
-    const findGroup = await Database.query()
-      .from("groups")
-      .where({ id: group.id })
-      .first();
+    const findGroup = await Group.findOrFail(group.id);
 
     assert.deepEqual(newTitle, findGroup.title);
   });
 
   test("[update] - should fail when trying to update another person's group", async (assert) => {
     const { token } = await generateToken();
-    const newTitle = faker.lorem.words(3);
+    const newTitle = faker.lorem.words(2);
 
     const user = await UserFactory.create();
     const group = await GroupFactory.merge({ userId: user.id }).create();
@@ -74,12 +69,10 @@ test.group("/groups", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(400);
 
-    const findGroup = await Database.query()
-      .from("groups")
-      .where({ id: group.id })
-      .first();
+    const findGroup = await Group.findOrFail(group.id);
 
-    assert.notEqual(newTitle, findGroup.title);
+    assert.equal(group.title, findGroup.title);
+    assert.notEqual(findGroup.title, newTitle);
   });
 
   test("[destroy] - should be able to delete a group", async (assert) => {
@@ -92,12 +85,9 @@ test.group("/groups", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
-    const findGroup = await Database.query()
-      .from("groups")
-      .where({ id: group.id })
-      .first();
+    const findGroup = await Group.find(group.id);
 
-    assert.isNull(findGroup);
+    assert.notExists(findGroup);
   });
 
   test("[destroy] - should fail when trying do delete another person's group", async (assert) => {
@@ -111,10 +101,7 @@ test.group("/groups", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(400);
 
-    const findGroup = await Database.query()
-      .from("groups")
-      .where({ id: group.id })
-      .first();
+    const findGroup = await Group.find(group.id);
 
     assert.exists(findGroup);
   });
@@ -122,30 +109,10 @@ test.group("/groups", async (group) => {
   test("[index] - should be able to list authenticated user's groups", async (assert) => {
     const { user, token } = await generateToken();
 
-    const groups = await Promise.all(
-      Array(10)
-        .fill(false)
-        .map(async () => {
-          const { body } = await request
-            .post("/groups")
-            .send({
-              title: faker.lorem.words(2)
-            })
-            .set("authorization", `bearer ${token}`)
-            .expect(200);
-
-          return body;
-        })
-    );
-
-    await Promise.all(
-      groups.map(async (group) => {
-        await sendMessages(token, 10, undefined, group.id);
-      })
-    );
+    const groups = await generateGroups({ token, amount: 30 });
 
     const { body } = await request
-      .get("/groups?page=1&perPage=20")
+      .get("/groups?page=1&perPage=100")
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
@@ -153,44 +120,26 @@ test.group("/groups", async (group) => {
     assert.exists(body.data);
     assert.equal(body.meta.total, groups.length);
 
-    await Promise.all(
-      body.data.map(async (group) => {
-        const latestMessage = await Database.query()
-          .from("messages")
-          .where({ group_id: group.id })
-          .orderBy("created_at", "desc")
-          .first();
-
-        assert.equal(group.latestMessage.id, latestMessage.id);
-        assert.equal(group.latestMessage.userId, latestMessage.user_id);
-        assert.equal(group.latestMessage.groupId, latestMessage.group_id);
-        assert.equal(group.latestMessage.content, latestMessage.content);
-      })
-    );
-
-    groups.forEach(async (group) => {
-      const memberships = await Database.query()
+    const queries = groups.map(async (group: Group) => {
+      const isMember = await Database.query()
         .from("group_members")
-        .where({ user_id: user.id });
+        .where({
+          group_id: group.id,
+          user_id: user.id
+        })
+        .firstOrFail();
 
-      const isValid = memberships.some(
-        (membership) => membership.group_id === group.id
-      );
-
-      assert.isTrue(isValid);
+      assert.exists(isMember);
     });
+
+    await Promise.all(queries);
   });
 
   test("[show] - should be able to show an authenticated user's group", async (assert) => {
     const { user, token } = await generateToken();
 
-    const { body: group } = await request
-      .post("/groups")
-      .send({
-        title: faker.lorem.words(2)
-      })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    const groups = await generateGroups({ token, amount: 1 });
+    const group = groups[0] as Group;
 
     const { body } = await request
       .get(`/groups/${group.id}`)
@@ -204,26 +153,19 @@ test.group("/groups", async (group) => {
     const isMember = await Database.query()
       .from("group_members")
       .where({ user_id: user.id, group_id: group.id })
-      .first();
+      .firstOrFail();
 
     assert.exists(isMember);
   });
 
   test("[show] - should fail when trying to show a group and you are not member of it", async () => {
     const { token } = await generateToken();
-    const { token: userToken } = await generateToken();
 
-    const { body: group } = await request
-      .post("/groups")
-      .send({
-        title: faker.lorem.words(2)
-      })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    const group = await GroupFactory.create();
 
     await request
       .get(`/groups/${group.id}`)
-      .set("authorization", `bearer ${userToken}`)
+      .set("authorization", `bearer ${token}`)
       .expect(404);
   });
 });

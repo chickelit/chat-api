@@ -133,8 +133,6 @@ test.group("/friendships/requests", async (group) => {
     assert.exists(body.data);
     assert.equal(body.meta.total, friendshipRequests.length);
 
-    console.table(body.data);
-
     friendshipRequests.forEach(({ user }) => {
       const isValid = body.data.some((friendshipRequestUser: User) => {
         return user.id === friendshipRequestUser.id;
