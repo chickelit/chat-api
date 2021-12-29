@@ -29,7 +29,7 @@ test.group("/members", async (group) => {
     });
     const group = groups[0] as Group;
 
-    const { friend } = await generateFriend({ user, token });
+    const { friend } = await generateFriend({ user });
 
     await request
       .post("/members")
@@ -71,7 +71,7 @@ test.group("/members", async (group) => {
 
   test("[store] - should fail when trying to add someone to another person's group", async (assert) => {
     const { user, token } = await generateToken();
-    const { friend } = await generateFriend({ user, token });
+    const { friend } = await generateFriend({ user });
 
     const group = await GroupFactory.create();
 

@@ -3,15 +3,14 @@ import { generateFriend } from ".";
 
 interface Payload {
   user: User;
-  token: string;
   amount: number;
 }
 
-export default async ({ user, token, amount }: Payload) => {
+export default async ({ user, amount }: Payload) => {
   const queries = Array(amount)
     .fill(false)
     .map(async () => {
-      const { friend } = await generateFriend({ user, token });
+      const { friend } = await generateFriend({ user });
 
       const conversation = await Conversation.create({
         userIdOne: user.id,

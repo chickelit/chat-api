@@ -40,12 +40,14 @@ export default async ({ conversation, group, amount }: Payload) => {
         );
         const randomMember = members[randomMemberIndex];
 
-        await Message.create({
+        const message = await Message.create({
           category: "text",
           content: faker.lorem.paragraph(),
           groupId: group.id,
           userId: randomMember.id
         });
+
+        return message;
       });
 
     const messages = await Promise.all(queries);

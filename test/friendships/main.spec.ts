@@ -3,10 +3,10 @@ import { Friendship, FriendshipRequest, User } from "App/Models";
 import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
 import {
-  addFriends,
   request,
   generateToken,
-  generatePendingFriendshipRequests
+  generatePendingFriendshipRequests,
+  generateFriend
 } from "Test/utils";
 
 test.group("/friendships", async (group) => {
@@ -75,27 +75,21 @@ test.group("/friendships", async (group) => {
       .expect(400);
 
     const friendship = [
-      await Database.query()
-        .from("friendships")
+      await Friendship.query()
         .where({
-          user_id: user.id,
-          friend_id: friend.id
+          userId: user.id,
+          friendId: friend.id
         })
         .first(),
-      await Database.query()
-        .from("friendships")
-        .where({ user_id: friend.id, friend_id: user.id })
+      await Friendship.query()
+        .where({
+          userId: friend.id,
+          friendId: user.id
+        })
         .first()
-    ].every((condition: any) => !!condition);
+    ].every((condition) => condition);
 
     assert.isFalse(friendship);
-
-    const friendshipRequest = await Database.query()
-      .from("friendship_requests")
-      .where({ user_id: friend.id, friend_id: user.id })
-      .first();
-
-    assert.isNull(friendshipRequest);
   });
 
   test("[store] - should fail when trying to accept a friendship request from yourself", async () => {
@@ -110,43 +104,19 @@ test.group("/friendships", async (group) => {
 
   test("[index] - should be able to list authenticated user's friends", async (assert) => {
     const { user, token } = await generateToken();
-    const array = Array(10).fill(false);
-    const queries = array.map(async () => {
-      return await generateToken();
-    });
-    const friends = await Promise.all(queries);
 
-    await addFriends({ user, token }, friends);
+    const queries = Array(30)
+      .fill(false)
+      .map(async () => {
+        const friend = await generateFriend({ user });
 
-    const { body } = await request
-      .get("/friendships?page=1&perPage=20")
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
-    assert.exists(body.meta);
-    assert.exists(body.data);
-    assert.equal(body.meta.total, friends.length);
-
-    friends.forEach(({ user }) => {
-      const isValid = body.data.some((friend: User) => {
-        return user.id === friend.id;
+        return friend;
       });
 
-      assert.isTrue(isValid);
-    });
-  });
-
-  test("[index] - should show extra data correctly", async (assert) => {
-    const { user, token } = await generateToken();
-    const array = Array(10).fill(false);
-    const queries = array.map(async () => {
-      return await generateToken();
-    });
     const friends = await Promise.all(queries);
-    await addFriends({ user, token }, friends);
 
     const { body } = await request
-      .get("/friendships?page=1&perPage=20")
+      .get("/friendships?page=1&perPage=100")
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
@@ -154,8 +124,8 @@ test.group("/friendships", async (group) => {
     assert.exists(body.data);
     assert.equal(body.meta.total, friends.length);
 
-    friends.forEach(({ user }) => {
-      const isValid = body.data.some((friend: User) => {
+    friends.forEach(({ friend }) => {
+      const isValid = body.data.some((user: User) => {
         return user.id === friend.id;
       });
 
@@ -165,38 +135,38 @@ test.group("/friendships", async (group) => {
 
   test("[destroy] - should be able to delete a friendship", async (assert) => {
     const { user, token } = await generateToken();
-    const friendWithToken = await generateToken();
 
-    await addFriends({ user, token }, [friendWithToken]);
+    const { friend } = await generateFriend({ user });
 
     await request
-      .delete(`/friendships/${friendWithToken.user.id}`)
+      .delete(`/friendships/${friend.id}`)
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
     const friendship = [
-      await Database.query()
-        .from("friendships")
+      await Friendship.query()
         .where({
-          user_id: user.id,
-          friend_id: friendWithToken.user.id
+          userId: user.id,
+          friendId: friend.id
         })
         .first(),
-      await Database.query()
-        .from("friendships")
-        .where({ user_id: friendWithToken.user.id, friend_id: user.id })
+      await Friendship.query()
+        .where({
+          userId: friend.id,
+          friendId: user.id
+        })
         .first()
-    ].every((condition: any) => !!condition);
+    ].every((condition) => condition);
 
     assert.isFalse(friendship);
   });
 
   test("[destroy] - should fail when trying to delete a friendship that does not exist", async () => {
     const { token } = await generateToken();
-    const userWithToken = await generateToken();
+    const user = await UserFactory.create();
 
     await request
-      .delete(`/friendships/${userWithToken.user.id}`)
+      .delete(`/friendships/${user.id}`)
       .set("authorization", `bearer ${token}`)
       .expect(400);
   });

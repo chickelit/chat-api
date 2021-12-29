@@ -1,7 +1,14 @@
 import Database from "@ioc:Adonis/Lucid/Database";
 import test from "japa";
-import { request, generateToken, sendMessages } from "Test/utils";
+import {
+  request,
+  generateToken,
+  generateGroups,
+  generateMessages
+} from "Test/utils";
 import faker from "faker";
+import { File, Group, Message } from "App/Models";
+import { GroupFactory } from "Database/factories/GroupFactory";
 
 test.group("/messages/group", async (group) => {
   group.beforeEach(async () => {
@@ -12,14 +19,11 @@ test.group("/messages/group", async (group) => {
     await Database.rollbackGlobalTransaction();
   });
 
-  test("[store] - should be able to send a text message", async (assert) => {
+  test("[store] - should be able to send a text message to a group", async (assert) => {
     const { user, token } = await generateToken();
 
-    const { body: group } = await request
-      .post("/groups")
-      .send({ title: faker.lorem.words(2) })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    const groups = await generateGroups({ token, amount: 1 });
+    const group = groups[0] as Group;
 
     const content = faker.lorem.paragraph();
 
@@ -32,33 +36,24 @@ test.group("/messages/group", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
-    const message = await Database.query()
-      .from("messages")
-      .where({ id: body.id })
-      .first();
+    const message = await Message.findOrFail(body.id);
 
     assert.exists(message);
-    assert.exists(message.group_id);
-    assert.isNull(message.conversation_id);
-    assert.exists(message.user_id);
+    assert.exists(message.groupId);
+    assert.isNull(message.conversationId);
+    assert.exists(message.userId);
     assert.exists(message.content);
     assert.exists(message.category);
     assert.equal(message.category, "text");
-    assert.equal(message.user_id, user.id);
-    assert.equal(message.group_id, body.groupId);
+    assert.equal(message.userId, user.id);
+    assert.equal(message.groupId, body.groupId);
     assert.equal(message.content, content);
   });
 
   test("[store] - should fail when trying to send a message to a group you are not part of", async () => {
     const { token } = await generateToken();
-    const { token: otherToken } = await generateToken();
 
-    const { body: group } = await request
-      .post("/groups")
-      .send({ title: faker.lorem.words(2) })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
-
+    const group = await GroupFactory.create();
     const content = faker.lorem.paragraph();
 
     await request
@@ -67,18 +62,15 @@ test.group("/messages/group", async (group) => {
         groupId: group.id,
         content
       })
-      .set("authorization", `bearer ${otherToken}`)
+      .set("authorization", `bearer ${token}`)
       .expect(400);
   });
 
   test("[store] - should be able to send a media", async (assert) => {
     const { user, token } = await generateToken();
 
-    const { body: group } = await request
-      .post("/groups")
-      .send({ title: faker.lorem.words(2) })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    const groups = await generateGroups({ token, amount: 1 });
+    const group = groups[0] as Group;
 
     const { body } = await request
       .post(`/messages/group/${group.id}/media`)
@@ -86,91 +78,88 @@ test.group("/messages/group", async (group) => {
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
-    const message = await Database.query()
-      .from("messages")
-      .where({ id: body.id })
-      .first();
+    const message = await Message.findOrFail(body.id);
+
+    await message.load("media");
 
     assert.exists(message);
-    assert.exists(message.group_id);
-    assert.isNull(message.conversation_id);
-    assert.exists(message.user_id);
+    assert.exists(message.groupId);
+    assert.isNull(message.conversationId);
+    assert.exists(message.userId);
     assert.isNull(message.content);
     assert.exists(message.category);
     assert.equal(message.category, "media");
-    assert.equal(message.user_id, user.id);
-    assert.equal(message.group_id, body.groupId);
+    assert.equal(message.userId, user.id);
+    assert.equal(message.groupId, body.groupId);
 
-    const file = await Database.query()
-      .from("files")
-      .where({ message_id: message.id })
-      .first();
+    assert.exists(message.media);
+    assert.exists(message.media.url);
+
+    const file = await File.findOrFail(message.media.id);
 
     assert.exists(file);
   });
 
   test("[store] - should fail when trying to send a media to a group you are not part of", async () => {
     const { token } = await generateToken();
-    const { token: otherToken } = await generateToken();
 
-    const { body: group } = await request
-      .post("/groups")
-      .send({ title: faker.lorem.words(2) })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    const group = await GroupFactory.create();
 
     await request
       .post(`/messages/group/${group.id}/media`)
       .attach("file", "test/assets/media.jpg")
-      .set("authorization", `bearer ${otherToken}`)
+      .set("authorization", `bearer ${token}`)
       .expect(400);
   });
 
   test("[index] - should be able to list a group's message list", async (assert) => {
-    const { user, token } = await generateToken();
+    const { token } = await generateToken();
 
-    const { body: group } = await request
-      .post("/groups")
-      .send({ title: faker.lorem.words(2) })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    const groups = await generateGroups({ token, amount: 1 });
+    let group = groups[0] as Group;
 
-    const payload = await sendMessages(token, 10, undefined, group.id);
+    group = await Group.findOrFail(group.id);
+
+    const messages = (await generateMessages({
+      group,
+      amount: 100
+    })) as Message[];
 
     const { body } = await request
-      .get(`/messages/group/${group.id}?page=1&perPage=20`)
+      .get(`/messages/group/${group.id}?page=1&perPage=200`)
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
     assert.exists(body.meta);
     assert.exists(body.data);
-    assert.equal(body.meta.total, payload.length);
-    assert.equal(payload.length, body.data.length);
+    assert.equal(body.meta.total, messages.length);
+    assert.equal(messages.length, body.data.length);
 
-    payload.forEach((payloadMessage) => {
+    const memberships = await Database.query()
+      .from("group_members")
+      .where({ group_id: group.id });
+
+    messages.forEach((message: Message) => {
       const isValid = body.data.some(
-        (message) => message.id === payloadMessage.id
+        (bodyMessage: Message) =>
+          message.id === bodyMessage.id &&
+          memberships.some(
+            (membership) => membership.user_id === bodyMessage.userId
+          )
       );
 
       assert.isTrue(isValid);
     });
-
-    body.data.forEach((message) => assert.equal(message.userId, user.id));
   });
 
   test("[index] - should fail when trying to list a group's message list from a group you are not part of", async () => {
     const { token } = await generateToken();
-    const { token: otherToken } = await generateToken();
 
-    const { body: group } = await request
-      .post("/groups")
-      .send({ title: faker.lorem.words(2) })
-      .set("authorization", `bearer ${token}`)
-      .expect(200);
+    const group = await GroupFactory.create();
 
     await request
       .get(`/messages/group/${group.id}?page=1&perPage=20`)
-      .set("authorization", `bearer ${otherToken}`)
+      .set("authorization", `bearer ${token}`)
       .expect(400);
   });
 });

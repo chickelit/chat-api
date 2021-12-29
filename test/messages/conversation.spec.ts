@@ -19,12 +19,11 @@ test.group("/messages/conversation", async (group) => {
     await Database.rollbackGlobalTransaction();
   });
 
-  test("[store] - should be able to send a text message", async (assert) => {
+  test("[store] - should be able to send a text message to a conversation", async (assert) => {
     const { user, token } = await generateToken();
 
     const conversations = await generateConversations({
       user,
-      token,
       amount: 1
     });
     const conversation = conversations[0] as Conversation;
@@ -80,7 +79,6 @@ test.group("/messages/conversation", async (group) => {
 
     const conversations = await generateConversations({
       user,
-      token,
       amount: 1
     });
     const conversation = conversations[0] as Conversation;
@@ -113,7 +111,6 @@ test.group("/messages/conversation", async (group) => {
 
     const conversations = await generateConversations({
       user,
-      token,
       amount: 1
     });
     const conversation = conversations[0] as Conversation;
@@ -163,7 +160,6 @@ test.group("/messages/conversation", async (group) => {
 
     const conversations = await generateConversations({
       user,
-      token,
       amount: 1
     });
     const conversation = conversations[0] as Conversation;
@@ -191,7 +187,6 @@ test.group("/messages/conversation", async (group) => {
 
     const conversations = await generateConversations({
       user,
-      token,
       amount: 1
     });
     const conversation = conversations[0] as Conversation;

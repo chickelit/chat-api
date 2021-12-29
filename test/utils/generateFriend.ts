@@ -1,25 +1,27 @@
-import { User } from "App/Models";
-import { generateToken, request } from ".";
+import { Friendship, User } from "App/Models";
+import { UserFactory } from "Database/factories/UserFactory";
+import { authenticate } from ".";
 
 interface Payload {
   user: User;
-  token: string;
 }
 
-export default async ({ user, token }: Payload) => {
-  const { user: friend, token: friendToken } = await generateToken();
+export default async ({ user }: Payload) => {
+  const friend = await UserFactory.merge({ password: "secret" }).create();
 
-  await request
-    .post("/friendships/requests")
-    .send({ userId: friend.id })
-    .set("authorization", `bearer ${token}`)
-    .expect(200);
+  await Friendship.create({
+    userId: user.id,
+    friendId: friend.id
+  });
+  await Friendship.create({
+    userId: friend.id,
+    friendId: user.id
+  });
 
-  await request
-    .post("/friendships")
-    .send({ userId: user.id })
-    .set("authorization", `bearer ${friendToken}`)
-    .expect(200);
+  const { token: friendToken } = await authenticate({
+    email: friend.email,
+    password: "secret"
+  });
 
   return {
     friend: {
