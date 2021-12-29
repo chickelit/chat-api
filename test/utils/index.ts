@@ -11,6 +11,7 @@ export { default as register } from "./register";
 export { default as generateGroups } from "./generateGroups";
 export { default as generateMembers } from "./generateMembers";
 export { default as authenticate } from "./authenticate";
+export { default as generateMessages } from "./generateMessages";
 
 /* not in use */
 export { default as beginRegister } from "./beginRegister";
@@ -34,4 +35,5 @@ register
 generateGroups
 generateMembers
 authenticate
+generateMessages
 */

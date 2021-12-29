@@ -21,7 +21,7 @@ test.group("/conversations", async (group) => {
   test("[store] - should be able to create a conversation", async (assert) => {
     const { user, token } = await generateToken();
 
-    const { friend } = await generateFriend(user, token);
+    const { friend } = await generateFriend({ user, token });
 
     await request
       .post("/conversations")
