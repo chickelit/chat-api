@@ -32,8 +32,8 @@ export default class Group extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime;
 
-  @column.dateTime({ autoCreate: true })
-  public latestMessageAt: DateTime;
+  @column()
+  public latestMessageAt: string;
 
   @manyToMany(() => User, {
     pivotTable: "group_members",

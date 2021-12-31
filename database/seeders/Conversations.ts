@@ -11,7 +11,7 @@ export default class ConversationsSeeder extends BaseSeeder {
     const queries = users
       .filter((user) => user.username !== "me")
       .map(async (user) => {
-        counter += 1000;
+        counter += 50;
 
         await Conversation.create({
           userIdOne: me?.id,

@@ -70,7 +70,9 @@ export default class Message extends BaseModel {
     } else if (message.groupId) {
       await message.load("group");
 
-      await message.group.merge({ latestMessageAt: message.updatedAt }).save();
+      await message.group
+        .merge({ latestMessageAt: new Date().toISOString() })
+        .save();
     }
   }
 }
