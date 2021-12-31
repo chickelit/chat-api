@@ -6,10 +6,20 @@ export default class ConversationsSeeder extends BaseSeeder {
     const users = await User.query();
     const me = users.find((user) => user.username === "me");
 
+    let counter = 0;
+
     const queries = users
       .filter((user) => user.username !== "me")
       .map(async (user) => {
-        await Conversation.create({ userIdOne: me?.id, userIdTwo: user.id });
+        counter += 1000;
+
+        await Conversation.create({
+          userIdOne: me?.id,
+          userIdTwo: user.id,
+          latestMessageAt: new Date(
+            new Date().getTime() + counter
+          ).toISOString()
+        });
       });
 
     await Promise.all(queries);
