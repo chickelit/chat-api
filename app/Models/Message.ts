@@ -64,7 +64,7 @@ export default class Message extends BaseModel {
 
       await message.conversation
         .merge({
-          latestMessageAt: new Date(message.createdAt.toISODate()).toISOString()
+          latestMessageAt: new Date().toISOString()
         })
         .save();
     } else if (message.groupId) {
