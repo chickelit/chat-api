@@ -1,5 +1,6 @@
 import { DateTime } from "luxon";
 import {
+  afterCreate,
   BaseModel,
   BelongsTo,
   belongsTo,
@@ -68,5 +69,14 @@ export default class Group extends BaseModel {
   @computed()
   public get isOwner() {
     return this.$extras.isOwner;
+  }
+
+  @afterCreate()
+  public static async setLatestMessageAt(group: Group) {
+    group.merge({
+      latestMessageAt: new Date(group.createdAt.toISO()).toISOString()
+    });
+
+    await group.save();
   }
 }
