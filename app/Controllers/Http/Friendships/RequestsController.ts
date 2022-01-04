@@ -17,7 +17,7 @@ export default class RequestsController {
     const pendingFriendshipRequests = await user
       .related("pendingFriendshipRequests")
       .query()
-      .orderBy("created_at", "asc")
+      .orderBy("username", "asc")
       .preload("avatar")
       .paginate(page, perPage);
 
