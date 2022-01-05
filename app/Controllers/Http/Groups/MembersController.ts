@@ -157,8 +157,10 @@ export default class MembersController {
       return response.badRequest();
     }
 
-    Ws.io.to(`group-${groupId}`).emit("deleteMember", { memberId: +userId });
+    Ws.io
+      .to(`group-${groupId}`)
+      .emit("deleteMember", { userId: +userId, groupId });
 
-    Ws.io.to(`user-${userId}`).emit(`deleteGroup`, { groupId: +groupId });
+    Ws.io.to(`user-${userId}`).emit(`deleteGroup`, +groupId);
   }
 }
