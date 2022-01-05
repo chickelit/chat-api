@@ -5,9 +5,7 @@ export default class StoreValidator {
   constructor(protected ctx: HttpContextContract) {}
 
   public schema = schema.create({
-    conversationId: schema.number([
-      rules.exists({ column: "id", table: "conversations" })
-    ]),
+    receiverId: schema.number([rules.exists({ column: "id", table: "users" })]),
     content: schema.string({ trim: true })
   });
 

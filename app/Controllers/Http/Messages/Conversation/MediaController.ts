@@ -9,25 +9,30 @@ export default class MediaController {
     const { file } = await request.validate(StoreValidator);
     const user = auth.user!;
 
-    const conversation = await Conversation.findOrFail(params.id);
-
-    if (![conversation.userIdOne, conversation.userIdTwo].includes(user.id)) {
-      return response.badRequest();
-    }
+    const existingConversation = await Conversation.query()
+      .where({
+        userIdOne: auth.user!.id,
+        userIdTwo: +params.receiverId
+      })
+      .orWhere({
+        userIdOne: +params.receiverId,
+        userIdTwo: auth.user!.id
+      })
+      .first();
 
     const friendship = [
       await Database.query()
         .from("friendships")
         .where({
-          user_id: conversation.userIdOne,
-          friend_id: conversation.userIdTwo
+          user_id: auth.user!.id,
+          friend_id: +params.receiverId
         })
         .first(),
       await Database.query()
         .from("friendships")
         .where({
-          user_id: conversation.userIdTwo,
-          friend_id: conversation.userIdOne
+          user_id: +params.receiverId,
+          friend_id: auth.user!.id
         })
         .first()
     ].every((condition) => condition);
@@ -43,26 +48,55 @@ export default class MediaController {
       });
     }
 
-    const message = await conversation
-      .related("messages")
-      .create({ userId: user.id, category: "media" });
+    if (existingConversation) {
+      const message = await existingConversation
+        .related("messages")
+        .create({ userId: user.id, category: "media" });
 
-    const mediaFile = await message.related("media").create({
-      fileCategory: "media",
-      fileName: `${new Date().getTime()}.${file.extname}`
-    });
+      const mediaFile = await message.related("media").create({
+        fileCategory: "media",
+        fileName: `${new Date().getTime()}.${file.extname}`
+      });
 
-    await file.move(Application.tmpPath("uploads"), {
-      name: mediaFile.fileName,
-      overwrite: true
-    });
+      await file.move(Application.tmpPath("uploads"), {
+        name: mediaFile.fileName,
+        overwrite: true
+      });
 
-    await message.load("owner", (owner) => {
-      owner.preload("avatar");
-    });
+      await message.load("owner", (owner) => {
+        owner.preload("avatar");
+      });
 
-    await message.load("media");
+      await message.load("media");
 
-    return message;
+      return message;
+    } else {
+      const conversation = await Conversation.create({
+        userIdOne: auth.user!.id,
+        userIdTwo: +params.receiverId
+      });
+
+      const message = await conversation
+        .related("messages")
+        .create({ userId: user.id, category: "media" });
+
+      const mediaFile = await message.related("media").create({
+        fileCategory: "media",
+        fileName: `${new Date().getTime()}.${file.extname}`
+      });
+
+      await file.move(Application.tmpPath("uploads"), {
+        name: mediaFile.fileName,
+        overwrite: true
+      });
+
+      await message.load("owner", (owner) => {
+        owner.preload("avatar");
+      });
+
+      await message.load("media");
+
+      return message;
+    }
   }
 }

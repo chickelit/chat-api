@@ -4,7 +4,8 @@ import {
   request,
   generateToken,
   generateConversations,
-  generateMessages
+  generateMessages,
+  generateFriend
 } from "Test/utils";
 import faker from "faker";
 import { Conversation, File, Friendship, Message } from "App/Models";
@@ -21,26 +22,37 @@ test.group("/messages/conversation", async (group) => {
 
   test("[store] - should be able to send a text message to a conversation", async (assert) => {
     const { user, token } = await generateToken();
-
-    const conversations = await generateConversations({
-      user,
-      amount: 1
-    });
-    const conversation = conversations[0] as Conversation;
+    const { friend: receiver } = await generateFriend({ user });
 
     const content = faker.lorem.paragraph();
 
     const { body } = await request
       .post("/messages/conversation/text")
       .send({
-        conversationId: conversation.id,
+        receiverId: receiver.id,
         content
       })
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
     const message = await Message.findOrFail(body.id);
+    const conversation = await Conversation.query()
+      .where({
+        userIdOne: user.id,
+        userIdTwo: receiver.id
+      })
+      .orWhere({
+        userIdOne: receiver.id,
+        userIdTwo: user.id
+      })
+      .firstOrFail();
 
+    assert.exists(conversation);
+    assert.include([conversation.userIdOne, conversation.userIdTwo], user.id);
+    assert.include(
+      [conversation.userIdOne, conversation.userIdTwo],
+      receiver.id
+    );
     assert.exists(message);
     assert.exists(message.conversationId);
     assert.isNull(message.groupId);
@@ -51,27 +63,6 @@ test.group("/messages/conversation", async (group) => {
     assert.equal(message.userId, user.id);
     assert.equal(message.conversationId, body.conversationId);
     assert.equal(message.content, content);
-  });
-
-  test("[store] - should fail when trying to send a message to a conversation you are not part of", async () => {
-    const { token } = await generateToken();
-
-    const userOne = await UserFactory.create();
-    const userTwo = await UserFactory.create();
-
-    const conversation = await Conversation.create({
-      userIdOne: userOne.id,
-      userIdTwo: userTwo.id
-    });
-
-    await request
-      .post("/messages/conversation/text")
-      .send({
-        conversationId: conversation.id,
-        content: faker.lorem.paragraph()
-      })
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
   });
 
   test("[store] - should fail when trying to send a message to someone who is not your friend", async () => {
@@ -95,11 +86,15 @@ test.group("/messages/conversation", async (group) => {
       .delete();
 
     const content = faker.lorem.paragraph();
+    const receiverId =
+      conversation.userIdOne === user.id
+        ? conversation.userIdTwo
+        : conversation.userIdOne;
 
     await request
       .post("/messages/conversation/text")
       .send({
-        conversationId: conversation.id,
+        receiverId,
         content
       })
       .set("authorization", `bearer ${token}`)
@@ -108,21 +103,32 @@ test.group("/messages/conversation", async (group) => {
 
   test("[store] - should be able to send a media", async (assert) => {
     const { user, token } = await generateToken();
-
-    const conversations = await generateConversations({
-      user,
-      amount: 1
-    });
-    const conversation = conversations[0] as Conversation;
+    const { friend: receiver } = await generateFriend({ user });
 
     const { body } = await request
-      .post(`/messages/conversation/${conversation.id}/media`)
+      .post(`/messages/conversation/${receiver.id}/media`)
       .attach("file", "test/assets/media.jpg")
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
     const message = await Message.findOrFail(body.id);
+    const conversation = await Conversation.query()
+      .where({
+        userIdOne: user.id,
+        userIdTwo: receiver.id
+      })
+      .orWhere({
+        userIdOne: receiver.id,
+        userIdTwo: user.id
+      })
+      .firstOrFail();
 
+    assert.exists(conversation);
+    assert.include([conversation.userIdOne, conversation.userIdTwo], user.id);
+    assert.include(
+      [conversation.userIdOne, conversation.userIdTwo],
+      receiver.id
+    );
     assert.exists(message);
     assert.exists(message.conversationId);
     assert.isNull(message.groupId);
@@ -135,24 +141,6 @@ test.group("/messages/conversation", async (group) => {
     const file = await File.findByOrFail("messageId", message.id);
 
     assert.exists(file);
-  });
-
-  test("[store] - should fail when trying to send a media to a conversation you are not part of", async () => {
-    const { token } = await generateToken();
-
-    const userOne = await UserFactory.create();
-    const userTwo = await UserFactory.create();
-
-    const conversation = await Conversation.create({
-      userIdOne: userOne.id,
-      userIdTwo: userTwo.id
-    });
-
-    await request
-      .post(`/messages/conversation/${conversation.id}/media`)
-      .attach("file", "test/assets/media.jpg")
-      .set("authorization", `bearer ${token}`)
-      .expect(400);
   });
 
   test("[store] - should fail when trying to send a media to someone who is not your friend", async () => {
@@ -175,8 +163,13 @@ test.group("/messages/conversation", async (group) => {
       })
       .delete();
 
+    const receiverId =
+      conversation.userIdOne === user.id
+        ? conversation.userIdTwo
+        : conversation.userIdOne;
+
     await request
-      .post(`/messages/conversation/${conversation.id}/media`)
+      .post(`/messages/conversation/${receiverId}/media`)
       .attach("file", "test/assets/media.jpg")
       .set("authorization", `bearer ${token}`)
       .expect(400);

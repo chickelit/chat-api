@@ -5,7 +5,7 @@ Route.post(
   "Messages/Conversation/MainController.store"
 ).middleware("auth");
 Route.post(
-  "/messages/conversation/:id/media",
+  "/messages/conversation/:receiverId/media",
   "Messages/Conversation/MediaController.store"
 ).middleware("auth");
 Route.get(

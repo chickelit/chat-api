@@ -41,29 +41,32 @@ export default class MainController {
   }
 
   public async store({ request, response, auth }: HttpContextContract) {
-    const { content, conversationId } = await request.validate(StoreValidator);
+    const { content, receiverId } = await request.validate(StoreValidator);
 
-    const conversation = await Conversation.findOrFail(conversationId);
-
-    if (
-      ![conversation.userIdOne, conversation.userIdTwo].includes(auth.user!.id)
-    ) {
-      return response.badRequest();
-    }
+    const existingConversation = await Conversation.query()
+      .where({
+        userIdOne: auth.user!.id,
+        userIdTwo: receiverId
+      })
+      .where({
+        userIdOne: receiverId,
+        userIdTwo: auth.user!.id
+      })
+      .first();
 
     const friendship = [
       await Database.query()
         .from("friendships")
         .where({
-          user_id: conversation.userIdOne,
-          friend_id: conversation.userIdTwo
+          user_id: auth.user!.id,
+          friend_id: receiverId
         })
         .first(),
       await Database.query()
         .from("friendships")
         .where({
-          user_id: conversation.userIdTwo,
-          friend_id: conversation.userIdOne
+          user_id: receiverId,
+          friend_id: auth.user!.id
         })
         .first()
     ].every((condition) => condition);
@@ -79,10 +82,23 @@ export default class MainController {
       });
     }
 
-    const message = await conversation
-      .related("messages")
-      .create({ userId: auth.user!.id, category: "text", content });
+    if (existingConversation) {
+      const message = await existingConversation
+        .related("messages")
+        .create({ userId: auth.user!.id, category: "text", content });
 
-    return message;
+      return message;
+    } else {
+      const conversation = await Conversation.create({
+        userIdOne: auth.user!.id,
+        userIdTwo: receiverId
+      });
+
+      const message = await conversation
+        .related("messages")
+        .create({ userId: auth.user!.id, category: "text", content });
+
+      return message;
+    }
   }
 }
