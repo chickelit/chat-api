@@ -6,7 +6,7 @@ export default class UpdateValidator {
 
   public schema = schema.create({
     groupId: schema.number([rules.exists({ column: "id", table: "groups" })]),
-    title: schema.string({ trim: true }, [rules.maxLength(30)])
+    title: schema.string({ trim: true }, [rules.maxLength(32)])
   });
 
   public messages = {};

@@ -5,7 +5,7 @@ export default class StoreValidator {
   constructor(protected ctx: HttpContextContract) {}
 
   public schema = schema.create({
-    title: schema.string({ trim: true }, [rules.maxLength(30)])
+    title: schema.string({ trim: true }, [rules.maxLength(32)])
   });
 
   public messages = {};
