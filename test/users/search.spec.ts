@@ -1,4 +1,5 @@
 import Database from "@ioc:Adonis/Lucid/Database";
+import { User } from "App/Models";
 import { UserFactory } from "Database/factories/UserFactory";
 import test from "japa";
 import { generateToken, request } from "Test/utils";
@@ -17,17 +18,12 @@ test.group("/users/search", async (group) => {
     const { token } = await generateToken();
 
     const { body } = await request
-      .get(`/users/search?username=${user.username}`)
+      .get(`/users/search?username=${user.username}&page=1&perPage=20`)
       .set("authorization", `bearer ${token}`)
       .expect(200);
 
-    assert.exists(body.id);
-    assert.exists(body.email);
-    assert.exists(body.name);
-    assert.exists(body.username);
-    assert.deepEqual(body.id, user.id);
-    assert.deepEqual(body.email, user.email);
-    assert.deepEqual(body.name, user.name);
-    assert.deepEqual(body.username, user.username);
+    const isValid = body.data.some((result: User) => result.id === user.id);
+
+    assert.isTrue(isValid);
   });
 });
