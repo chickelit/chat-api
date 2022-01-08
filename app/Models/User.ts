@@ -89,6 +89,11 @@ export default class User extends BaseModel {
   }
 
   @computed()
+  public get friendshipRequest() {
+    return this.$extras.friendshipRequest;
+  }
+
+  @computed()
   public get existingConversation() {
     return this.$extras.existingConversation;
   }

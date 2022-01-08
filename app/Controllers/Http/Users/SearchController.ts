@@ -1,6 +1,5 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
-import Database from "@ioc:Adonis/Lucid/Database";
-import { User } from "App/Models";
+import { Friendship, FriendshipRequest, User } from "App/Models";
 
 export default class MainController {
   public async show({ request, response, auth }: HttpContextContract) {
@@ -12,19 +11,39 @@ export default class MainController {
 
     const users = (await User.query()
       .whereRaw(`username LIKE '%${username}%'`)
+      .whereNot({ id: auth.user!.id })
       .preload("avatar")
       .paginate(page, perPage)) as any;
 
     const queries = users.toJSON().data.map(async (user: User) => {
-      const friendship = await Database.query()
-        .from("friendships")
+      const friendship = [
+        await Friendship.query()
+          .where({
+            userId: auth.user!.id,
+            friendId: user.id
+          })
+          .first(),
+        await Friendship.query()
+          .where({
+            userId: user.id,
+            friendId: auth.user!.id
+          })
+          .first()
+      ].every((condition) => condition);
+
+      const friendshipRequest = await FriendshipRequest.query()
         .where({
-          user_id: auth.user!.id,
-          friend_id: user.id
+          userId: auth.user!.id,
+          friendId: user.id
+        })
+        .orWhere({
+          userId: user.id,
+          friendId: auth.user!.id
         })
         .first();
 
       user.$extras.friendship = !!friendship;
+      user.$extras.friendshipRequest = !!friendshipRequest;
 
       await user.load("avatar");
 
