@@ -1,6 +1,7 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Database from "@ioc:Adonis/Lucid/Database";
 import { Conversation, Message } from "App/Models";
+import Ws from "App/Services/Ws";
 import { StoreValidator } from "App/Validators/Message/Private/Text";
 
 export default class MainController {
@@ -48,7 +49,7 @@ export default class MainController {
         userIdOne: auth.user!.id,
         userIdTwo: receiverId
       })
-      .where({
+      .orWhere({
         userIdOne: receiverId,
         userIdTwo: auth.user!.id
       })
@@ -87,6 +88,27 @@ export default class MainController {
         .related("messages")
         .create({ userId: auth.user!.id, category: "text", content });
 
+      await message.load("owner", (owner) => {
+        owner.preload("avatar");
+      });
+
+      Ws.io.to(`conversation-${message.conversationId}`).emit("newMessage", {
+        id: message.id,
+        userId: message.userId,
+        conversationId: message.conversationId,
+        content: message.content,
+        category: message.category,
+        createdAt: message.createdAt.toFormat("dd/MM/yyyy hh:mm:ss"),
+        updatedAt: message.updatedAt,
+        owner: {
+          id: message.owner.id,
+          email: message.owner.email,
+          name: message.owner.name,
+          username: message.owner.username,
+          avatar: message.owner.avatar
+        }
+      });
+
       return message;
     } else {
       const conversation = await Conversation.create({
@@ -97,6 +119,27 @@ export default class MainController {
       const message = await conversation
         .related("messages")
         .create({ userId: auth.user!.id, category: "text", content });
+
+      await message.load("owner", (owner) => {
+        owner.preload("avatar");
+      });
+
+      Ws.io.to(`conversation-${message.conversationId}`).emit("newMessage", {
+        id: message.id,
+        userId: message.userId,
+        conversationId: message.conversationId,
+        content: message.content,
+        category: message.category,
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+        owner: {
+          id: message.owner.id,
+          email: message.owner.email,
+          name: message.owner.name,
+          username: message.owner.username,
+          avatar: message.owner.avatar
+        }
+      });
 
       return message;
     }
