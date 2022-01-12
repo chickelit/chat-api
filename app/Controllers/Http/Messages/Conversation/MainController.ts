@@ -98,7 +98,7 @@ export default class MainController {
         conversationId: message.conversationId,
         content: message.content,
         category: message.category,
-        createdAt: message.createdAt.toFormat("dd/MM/yyyy hh:mm:ss"),
+        createdAt: message.createdAt.toFormat("dd/MM/yyyy HH:mm:ss"),
         updatedAt: message.updatedAt,
         owner: {
           id: message.owner.id,
@@ -130,7 +130,7 @@ export default class MainController {
         conversationId: message.conversationId,
         content: message.content,
         category: message.category,
-        createdAt: message.createdAt,
+        createdAt: message.createdAt.toFormat("dd/MM/yyyy HH:mm:ss"),
         updatedAt: message.updatedAt,
         owner: {
           id: message.owner.id,

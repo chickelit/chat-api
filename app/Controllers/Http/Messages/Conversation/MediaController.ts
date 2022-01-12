@@ -3,6 +3,7 @@ import { Conversation } from "App/Models";
 import { StoreValidator } from "App/Validators/Message/Private/Media";
 import Application from "@ioc:Adonis/Core/Application";
 import Database from "@ioc:Adonis/Lucid/Database";
+import Ws from "App/Services/Ws";
 
 export default class MediaController {
   public async store({ request, response, params, auth }: HttpContextContract) {
@@ -69,6 +70,23 @@ export default class MediaController {
 
       await message.load("media");
 
+      Ws.io.to(`conversation-${message.conversationId}`).emit("newMessage", {
+        id: message.id,
+        userId: message.userId,
+        conversationId: message.conversationId,
+        category: message.category,
+        createdAt: message.createdAt.toFormat("dd/MM/yyyy HH:mm:ss"),
+        updatedAt: message.updatedAt,
+        media: message.media,
+        owner: {
+          id: message.owner.id,
+          email: message.owner.email,
+          name: message.owner.name,
+          username: message.owner.username,
+          avatar: message.owner.avatar
+        }
+      });
+
       return message;
     } else {
       const conversation = await Conversation.create({
@@ -95,6 +113,23 @@ export default class MediaController {
       });
 
       await message.load("media");
+
+      Ws.io.to(`conversation-${message.conversationId}`).emit("newMessage", {
+        id: message.id,
+        userId: message.userId,
+        conversationId: message.conversationId,
+        category: message.category,
+        createdAt: message.createdAt.toFormat("dd/MM/yyyy HH:mm:ss"),
+        updatedAt: message.updatedAt,
+        media: message.media,
+        owner: {
+          id: message.owner.id,
+          email: message.owner.email,
+          name: message.owner.name,
+          username: message.owner.username,
+          avatar: message.owner.avatar
+        }
+      });
 
       return message;
     }
