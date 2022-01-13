@@ -1,5 +1,6 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import { Group, Message } from "App/Models";
+import Ws from "App/Services/Ws";
 import { StoreValidator } from "App/Validators/Message/Group/Text";
 
 export default class MainController {
@@ -55,6 +56,22 @@ export default class MainController {
       .related("messages")
       .create({ userId: user.id, category: "text", content });
 
+    Ws.io.to(`group-${groupId}`).emit("newMessage", {
+      id: message.id,
+      userId: message.userId,
+      groupId: message.groupId,
+      content: message.content,
+      category: message.category,
+      createdAt: message.createdAt.toFormat("dd/MM/yyyy HH:mm:ss"),
+      updatedAt: message.updatedAt,
+      owner: {
+        id: message.owner.id,
+        email: message.owner.email,
+        name: message.owner.name,
+        username: message.owner.username,
+        avatar: message.owner.avatar
+      }
+    });
     return message;
   }
 }

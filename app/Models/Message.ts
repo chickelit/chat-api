@@ -33,7 +33,7 @@ export default class Message extends BaseModel {
   @column.dateTime({
     autoCreate: true,
     serialize: (value: DateTime) => {
-      return value.toFormat("dd/MM/yyyy hh:mm:ss");
+      return value.toFormat("dd/MM/yyyy HH:mm:ss");
     }
   })
   public createdAt: DateTime;
