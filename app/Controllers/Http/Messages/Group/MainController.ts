@@ -36,6 +36,11 @@ export default class MainController {
     });
 
     messages.toJSON().data = await Promise.all(queries);
+    messages
+      .toJSON()
+      .data.sort((messageOne: Message, messageTwo: Message) =>
+        messageOne.createdAt > messageTwo.createdAt ? 1 : -1
+      );
 
     return messages;
   }

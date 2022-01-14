@@ -22,6 +22,7 @@ export default class MainController {
 
     const messages = await Message.query()
       .where({ conversationId: params.id })
+      .orderBy("created_at", "desc")
       .paginate(page, perPage);
 
     const queries = messages.toJSON().data.map(async (message: Message) => {
@@ -37,6 +38,11 @@ export default class MainController {
     });
 
     messages.toJSON().data = await Promise.all(queries);
+    messages
+      .toJSON()
+      .data.sort((messageOne: Message, messageTwo: Message) =>
+        messageOne.createdAt > messageTwo.createdAt ? 1 : -1
+      );
 
     return messages;
   }
