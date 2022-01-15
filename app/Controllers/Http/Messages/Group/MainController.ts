@@ -61,6 +61,10 @@ export default class MainController {
       .related("messages")
       .create({ userId: user.id, category: "text", content });
 
+    await message.load("owner", (owner) => {
+      owner.preload("avatar");
+    });
+
     Ws.io.to(`group-${groupId}`).emit("newMessage", {
       id: message.id,
       userId: message.userId,
@@ -77,6 +81,7 @@ export default class MainController {
         avatar: message.owner.avatar
       }
     });
+
     return message;
   }
 }
