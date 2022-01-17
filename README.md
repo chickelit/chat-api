@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Japa-v3.1.1-b000ff" />
 </div>
 <h4 align="center"> 
-	🚧  Em desenvolvimento...  🚧
+  🚀  Finalizado  🚀  
 </h4>
 
 <div id="tabela-de-conteudos"></div>
